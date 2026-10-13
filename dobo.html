@@ -7,308 +7,215 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>DOBO — Rubber Band Game</title>
+<title>DOBO — Rubber Band Chase</title>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
-    width: 100%; height: 100%;
-    overflow: hidden;
-    position: fixed;
-    inset: 0;
-    background: #0a0a15;
-    color: #e8e8f0;
+    width: 100%; height: 100%; overflow: hidden; position: fixed; inset: 0;
+    background: #0a0a15; color: #e8e8f0;
     font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-touch-callout: none;
-    touch-action: none;
-    overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    touch-action: none; overscroll-behavior: none;
   }
-
   :root {
-    --p1: #00d9ff;
-    --p1-glow: rgba(0, 217, 255, 0.5);
-    --p2: #ff6b35;
-    --p2-glow: rgba(255, 107, 53, 0.5);
-    --panel: rgba(16, 16, 28, 0.9);
-    --panel-solid: rgba(16, 16, 28, 0.98);
-    --border: rgba(255, 255, 255, 0.08);
-    --border-bright: rgba(255, 255, 255, 0.18);
-    --text-dim: rgba(232, 232, 240, 0.5);
-    --gold: #ffc857;
-    --safe-top: env(safe-area-inset-top, 0px);
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --p1: #00d9ff; --p1-glow: rgba(0, 217, 255, 0.5);
+    --p2: #ff6b35; --p2-glow: rgba(255, 107, 53, 0.5);
+    --panel: rgba(16, 16, 28, 0.9); --panel-solid: rgba(16, 16, 28, 0.98);
+    --border: rgba(255, 255, 255, 0.08); --border-bright: rgba(255, 255, 255, 0.2);
+    --text-dim: rgba(232, 232, 240, 0.5); --gold: #ffc857;
+    --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
-
   #app { position: relative; width: 100%; height: 100%; overflow: hidden; }
-
   #game-canvas {
-    display: block;
-    width: 100%; height: 100%;
-    position: absolute;
-    inset: 0;
+    display: block; width: 100%; height: 100%; position: absolute; inset: 0;
     touch-action: none;
   }
-
   #vignette {
-    position: absolute; inset: 0;
-    pointer-events: none;
-    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.5) 100%);
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.55) 100%);
     z-index: 5;
   }
-
-  #fx-layer {
-    position: absolute; inset: 0;
-    pointer-events: none;
-    overflow: hidden;
-    z-index: 20;
-  }
-  .float-text {
-    position: absolute;
-    font-size: 28px;
-    font-weight: 800;
-    text-shadow: 0 2px 12px rgba(0,0,0,0.95);
+  #fx-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 20; }
+  .big-text {
+    position: absolute; font-size: 44px; font-weight: 900;
+    letter-spacing: 4px; text-transform: uppercase;
+    text-shadow: 0 0 30px currentColor, 0 4px 20px rgba(0,0,0,0.95);
     transform: translate(-50%, -50%);
-    animation: floatUp 1.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: bigPop 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     white-space: nowrap;
-    letter-spacing: 0.5px;
   }
-  @keyframes floatUp {
-    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
-    20%  { opacity: 1; transform: translate(-50%, -70%) scale(1.3); }
-    60%  { opacity: 1; transform: translate(-50%, -100%) scale(1); }
-    100% { opacity: 0; transform: translate(-50%, -190%) scale(0.85); }
+  @keyframes bigPop {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.3) rotate(-8deg); }
+    25%  { opacity: 1; transform: translate(-50%, -50%) scale(1.35) rotate(2deg); }
+    50%  { opacity: 1; transform: translate(-50%, -55%) scale(1.1) rotate(0deg); }
+    100% { opacity: 0; transform: translate(-50%, -90%) scale(1) rotate(0deg); }
   }
 
   /* ===== HUD ===== */
   #hud {
-    position: absolute; inset: 0;
-    pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+    position: absolute; inset: 0; pointer-events: none;
+    display: flex; flex-direction: column; justify-content: space-between;
     padding: calc(14px + var(--safe-top)) 14px calc(14px + var(--safe-bottom));
-    z-index: 10;
-    transition: opacity 0.4s ease;
+    z-index: 10; transition: opacity 0.4s ease;
   }
   #hud.hidden { opacity: 0; pointer-events: none; }
-
   .top-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 8px;
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
   }
-
-  .player-card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 10px 14px;
-    min-width: 84px;
-    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-    position: relative;
-    overflow: hidden;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-  }
-
-  .player-card.p1 { border-left: 3px solid rgba(0,217,255,0.3); }
-  .player-card.p2 { border-right: 3px solid rgba(255,107,53,0.3); text-align: right; }
-
-  .player-card.active {
-    background: var(--panel-solid);
-    border-color: var(--border-bright);
-  }
-  .player-card.p1.active {
-    box-shadow: 0 0 24px rgba(0, 217, 255, 0.3), inset 0 0 20px rgba(0, 217, 255, 0.06);
-  }
-  .player-card.p2.active {
-    box-shadow: 0 0 24px rgba(255, 107, 53, 0.3), inset 0 0 20px rgba(255, 107, 53, 0.06);
-  }
-
-  .player-name {
-    font-size: 9.5px;
-    letter-spacing: 1.8px;
-    font-weight: 700;
-    opacity: 0.55;
-    margin-bottom: 3px;
-  }
-  .player-card.p1 .player-name { color: var(--p1); }
-  .player-card.p2 .player-name { color: var(--p2); }
-
-  .player-score {
-    font-size: 26px;
-    font-weight: 800;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
-    transition: color 0.3s;
-  }
-  .player-card.p1 .player-score { color: var(--p1); }
-  .player-card.p2 .player-score { color: var(--p2); }
-
-  .player-score.pop { animation: scorePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
-  @keyframes scorePop {
-    0%   { transform: scale(1); }
-    40%  { transform: scale(1.5); filter: brightness(2.2); }
-    100% { transform: scale(1); }
-  }
-
-  .turn-indicator {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 8px 14px;
-    font-size: 10.5px;
-    font-weight: 800;
-    letter-spacing: 1px;
+  .player-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 999px; padding: 8px 14px;
+    font-size: 11px; font-weight: 800; letter-spacing: 1.2px;
     text-transform: uppercase;
-    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-    white-space: nowrap;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s;
   }
-  .turn-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--p1);
-    box-shadow: 0 0 12px var(--p1), 0 0 4px var(--p1);
-    animation: dotPulse 1.6s ease-in-out infinite;
+  .player-badge.p1 { color: var(--p1); border-color: rgba(0, 217, 255, 0.25); }
+  .player-badge.p2 { color: var(--p2); border-color: rgba(255, 107, 53, 0.25); }
+  .player-badge.active.p1 {
+    border-color: var(--p1);
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.4), inset 0 0 14px rgba(0, 217, 255, 0.1);
+  }
+  .player-badge.active.p2 {
+    border-color: var(--p2);
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.4), inset 0 0 14px rgba(255, 107, 53, 0.1);
+  }
+  .badge-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 10px currentColor;
     flex-shrink: 0;
   }
-  .turn-indicator.p2 .turn-dot {
-    background: var(--p2);
-    box-shadow: 0 0 12px var(--p2), 0 0 4px var(--p2);
+  .badge-name { letter-spacing: 1.5px; }
+  .badge-wins {
+    display: flex; gap: 3px; margin-left: 4px;
   }
-  .turn-indicator.p1 { color: var(--p1); }
-  .turn-indicator.p2 { color: var(--p2); }
-  .turn-indicator.thinking .turn-dot {
-    animation: dotPulse 0.5s ease-in-out infinite;
-    background: var(--gold);
-    box-shadow: 0 0 12px var(--gold);
+  .wins-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    transition: all 0.4s;
   }
-  .turn-indicator.thinking { color: var(--gold); }
-
-  @keyframes dotPulse {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.4); opacity: 0.6; }
+  .wins-dot.filled {
+    background: currentColor; border-color: currentColor;
+    box-shadow: 0 0 8px currentColor;
+    transform: scale(1.2);
   }
 
-  /* ===== BOTTOM ===== */
-  .bottom-bar {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-  }
-
-  .power-meter {
-    width: 100%;
-    max-width: 340px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 10px 16px 12px;
-    transition: opacity 0.35s;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-  }
-  .power-meter.hidden { opacity: 0.2; pointer-events: none; }
-
-  .power-label-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 7px;
-  }
-  .power-label {
-    font-size: 9px;
-    letter-spacing: 2.2px;
-    font-weight: 800;
-    opacity: 0.55;
-  }
-  .power-value {
-    font-size: 11px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    opacity: 0.85;
-  }
-
-  .power-track {
-    height: 10px;
-    background: rgba(255,255,255,0.07);
-    border-radius: 5px;
-    overflow: hidden;
-    position: relative;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);
-  }
-  .power-fill {
-    height: 100%;
-    width: 50%;
-    background: linear-gradient(90deg, #00e08a 0%, #ffd93d 45%, #ff5c5c 100%);
-    border-radius: 5px;
-    transition: width 0.06s linear;
-    box-shadow: 0 0 14px rgba(255, 217, 61, 0.35);
-  }
-
-  .controls-hint {
-    font-size: 10.5px;
-    letter-spacing: 0.8px;
-    opacity: 0.5;
-    background: rgba(16, 16, 28, 0.75);
-    border: 1px solid var(--border);
-    padding: 7px 16px;
-    border-radius: 999px;
-    font-weight: 600;
+  .round-info {
     text-align: center;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 999px; padding: 7px 16px;
+    font-size: 10px; font-weight: 800; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--text-dim);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    transition: opacity 0.3s;
+  }
+
+  .countdown {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none; z-index: 15;
+  }
+  .countdown.hidden { display: none; }
+  .countdown-num {
+    font-size: clamp(90px, 25vw, 160px); font-weight: 900;
+    letter-spacing: 4px;
+    background: linear-gradient(135deg, var(--p1), #a78bfa, var(--p2));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 4px 30px rgba(120, 80, 255, 0.5));
+    animation: cdPop 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .countdown-num.go {
+    font-size: clamp(80px, 22vw, 140px);
+    letter-spacing: 8px;
+  }
+  @keyframes cdPop {
+    0% { opacity: 0; transform: scale(2.2); filter: blur(12px); }
+    60% { opacity: 1; transform: scale(1); filter: blur(0); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  .bottom-bar {
+    display: flex; flex-direction: column; align-items: center;
+    width: 100%; gap: 8px;
+  }
+  .controls-hint {
+    font-size: 10.5px; letter-spacing: 0.8px; opacity: 0.5;
+    background: rgba(16, 16, 28, 0.75); border: 1px solid var(--border);
+    padding: 7px 16px; border-radius: 999px; font-weight: 600;
+    text-align: center;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   }
   .controls-hint .mobile-only { display: none; }
+  @media (hover: none) {
+    .controls-hint .desktop-only { display: none; }
+    .controls-hint .mobile-only { display: inline; }
+  }
+
+  /* ===== JOYSTICKS ===== */
+  .joy {
+    position: fixed; width: 130px; height: 130px;
+    pointer-events: none; z-index: 25;
+    display: none;
+    transform: translate(-50%, -50%);
+  }
+  .joy.visible { display: block; animation: joyFade 0.2s ease-out; }
+  @keyframes joyFade { from { opacity: 0; } to { opacity: 1; } }
+  .joy-base {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.25);
+    background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 70%, rgba(255,255,255,0) 100%);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  }
+  .joy-knob {
+    position: absolute; left: 50%; top: 50%;
+    width: 52px; height: 52px; border-radius: 50%;
+    background: rgba(255,255,255,0.35);
+    border: 2px solid rgba(255,255,255,0.6);
+    transform: translate(-50%, -50%);
+    box-shadow: 0 4px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.4);
+    will-change: transform;
+  }
+  #joy-p1 .joy-base { border-color: rgba(0,217,255,0.55); }
+  #joy-p1 .joy-knob {
+    background: rgba(0,217,255,0.4);
+    border-color: rgba(0,217,255,0.75);
+    box-shadow: 0 0 24px rgba(0,217,255,0.5), 0 4px 18px rgba(0,0,0,0.35);
+  }
+  #joy-p2 .joy-base { border-color: rgba(255,107,53,0.55); }
+  #joy-p2 .joy-knob {
+    background: rgba(255,107,53,0.4);
+    border-color: rgba(255,107,53,0.75);
+    box-shadow: 0 0 24px rgba(255,107,53,0.5), 0 4px 18px rgba(0,0,0,0.35);
+  }
 
   /* ===== OVERLAYS ===== */
   .overlay {
     position: absolute; inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     background: radial-gradient(ellipse at center, rgba(10,10,25,0.78) 0%, rgba(5,5,15,0.97) 100%);
-    z-index: 50;
-    opacity: 1;
-    transition: opacity 0.4s ease;
+    z-index: 50; opacity: 1; transition: opacity 0.4s ease;
     padding: calc(20px + var(--safe-top)) 20px calc(20px + var(--safe-bottom));
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
   }
   .overlay.hidden { opacity: 0; pointer-events: none; }
-
   .menu-content {
-    max-width: 440px;
-    width: 100%;
-    text-align: center;
-    animation: menuIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    margin: auto;
+    max-width: 440px; width: 100%; text-align: center;
+    animation: menuIn 0.6s cubic-bezier(0.16, 1, 0.3, 1); margin: auto;
   }
   @keyframes menuIn {
     from { opacity: 0; transform: translateY(24px); }
     to   { opacity: 1; transform: translateY(0); }
   }
-
   .game-title {
-    font-size: clamp(48px, 15vw, 84px);
-    font-weight: 900;
-    letter-spacing: 6px;
-    line-height: 0.95;
-    margin-bottom: 6px;
+    font-size: clamp(48px, 15vw, 84px); font-weight: 900;
+    letter-spacing: 6px; line-height: 0.95; margin-bottom: 6px;
     background: linear-gradient(135deg, var(--p1) 0%, #a78bfa 45%, var(--p2) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
+    -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent;
     filter: drop-shadow(0 4px 24px rgba(120, 80, 255, 0.35));
     animation: titleGlow 4s ease-in-out infinite;
@@ -317,50 +224,26 @@
     0%, 100% { filter: drop-shadow(0 4px 24px rgba(120, 80, 255, 0.35)); }
     50%      { filter: drop-shadow(0 4px 32px rgba(0, 217, 255, 0.5)); }
   }
-
   .subtitle {
-    font-size: 11px;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    font-weight: 700;
-    color: var(--text-dim);
-    margin-bottom: 36px;
+    font-size: 11px; letter-spacing: 4px; text-transform: uppercase;
+    font-weight: 700; color: var(--text-dim); margin-bottom: 36px;
   }
-
-  .menu-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 11px;
-    align-items: center;
-  }
-
+  .menu-buttons { display: flex; flex-direction: column; gap: 11px; align-items: center; }
   .btn {
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 800;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    padding: 16px 40px;
-    border-radius: 14px;
+    font-family: inherit; font-size: 14px; font-weight: 800;
+    letter-spacing: 2px; text-transform: uppercase;
+    padding: 16px 40px; border-radius: 14px;
     border: 1px solid var(--border-bright);
-    background: var(--panel);
-    color: #e8e8f0;
-    cursor: pointer;
+    background: var(--panel); color: #e8e8f0; cursor: pointer;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    min-width: 240px;
-    position: relative;
-    overflow: hidden;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
+    min-width: 240px; position: relative; overflow: hidden;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation;
   }
   .btn:hover, .btn:focus {
-    transform: translateY(-2px);
-    border-color: rgba(255,255,255,0.4);
-    background: rgba(30, 30, 50, 0.98);
-    outline: none;
+    transform: translateY(-2px); border-color: rgba(255,255,255,0.4);
+    background: rgba(30, 30, 50, 0.98); outline: none;
   }
   .btn:active { transform: translateY(0) scale(0.97); }
-
   .btn-primary {
     background: linear-gradient(135deg, rgba(0,217,255,0.2) 0%, rgba(255,107,53,0.2) 100%);
     border-color: rgba(0, 217, 255, 0.45);
@@ -370,180 +253,83 @@
     box-shadow: 0 0 48px rgba(0, 217, 255, 0.35), inset 0 1px 0 rgba(255,255,255,0.15);
     border-color: rgba(0, 217, 255, 0.8);
   }
-
-  .btn-small {
-    font-size: 12px;
-    padding: 12px 28px;
-    min-width: 200px;
-    letter-spacing: 1.5px;
-  }
-
-  /* Rules */
+  .btn-small { font-size: 12px; padding: 12px 28px; min-width: 200px; letter-spacing: 1.5px; }
   .rules {
-    text-align: left;
-    list-style: none;
-    margin: 0 0 28px;
-    display: flex;
-    flex-direction: column;
-    gap: 13px;
+    text-align: left; list-style: none; margin: 0 0 28px;
+    display: flex; flex-direction: column; gap: 13px;
   }
   .rules li {
-    font-size: 13.5px;
-    line-height: 1.55;
+    font-size: 13.5px; line-height: 1.55;
     color: rgba(232, 232, 240, 0.85);
-    padding-left: 26px;
-    position: relative;
-    font-weight: 500;
+    padding-left: 26px; position: relative; font-weight: 500;
   }
   .rules li::before {
-    content: '';
-    position: absolute;
-    left: 6px;
-    top: 7px;
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--p1);
-    box-shadow: 0 0 10px var(--p1-glow);
+    content: ''; position: absolute; left: 6px; top: 7px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--p1); box-shadow: 0 0 10px var(--p1-glow);
   }
   .rules li:nth-child(2)::before { background: var(--p2); box-shadow: 0 0 10px var(--p2-glow); }
   .rules li:nth-child(3)::before { background: var(--gold); box-shadow: 0 0 10px rgba(255,200,87,0.5); }
   .rules li:nth-child(4)::before { background: #a78bfa; box-shadow: 0 0 10px rgba(167,139,250,0.5); }
-  .rules li:nth-child(5)::before { background: #00e08a; box-shadow: 0 0 10px rgba(0,224,138,0.5); }
-
   .overlay h2 {
-    font-size: 26px;
-    font-weight: 900;
-    letter-spacing: 3px;
-    margin-bottom: 24px;
-    text-transform: uppercase;
+    font-size: 26px; font-weight: 900;
+    letter-spacing: 3px; margin-bottom: 24px; text-transform: uppercase;
   }
-
   #winner-text {
-    font-size: clamp(28px, 8vw, 42px);
-    letter-spacing: 4px;
-    margin-bottom: 8px;
+    font-size: clamp(28px, 8vw, 42px); letter-spacing: 4px; margin-bottom: 8px;
     background: linear-gradient(135deg, var(--gold), #fff);
-    -webkit-background-clip: text;
-    background-clip: text;
+    -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent;
   }
   #winner-text.p1 {
     background: linear-gradient(135deg, var(--p1), #a78bfa);
-    -webkit-background-clip: text;
-    background-clip: text;
+    -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent;
   }
   #winner-text.p2 {
     background: linear-gradient(135deg, var(--p2), var(--gold));
-    -webkit-background-clip: text;
-    background-clip: text;
+    -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent;
   }
-
   .final-scores {
-    display: flex;
-    justify-content: center;
-    gap: 44px;
-    margin: 20px 0 32px;
+    display: flex; justify-content: center; gap: 44px; margin: 20px 0 32px;
   }
-  .final-score {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-  }
-  .final-score .label {
-    font-size: 10px;
-    letter-spacing: 2px;
-    font-weight: 700;
-    opacity: 0.55;
-  }
+  .final-score { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .final-score .label { font-size: 10px; letter-spacing: 2px; font-weight: 700; opacity: 0.55; }
   .final-score .value {
-    font-size: 46px;
-    font-weight: 900;
-    line-height: 1;
+    font-size: 46px; font-weight: 900; line-height: 1;
     font-variant-numeric: tabular-nums;
   }
   .final-score.p1 .value { color: var(--p1); }
   .final-score.p2 .value { color: var(--p2); }
 
-  /* ===== SHOOT BUTTON (mobile) ===== */
-  #shoot-btn {
-    position: absolute;
-    right: 16px;
-    bottom: calc(80px + var(--safe-bottom));
-    width: 76px;
-    height: 76px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, rgba(0,217,255,0.25), rgba(255,107,53,0.25));
-    border: 2px solid rgba(0, 217, 255, 0.5);
-    color: #fff;
-    font-family: inherit;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 1.5px;
-    cursor: pointer;
-    z-index: 15;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    text-transform: uppercase;
-    box-shadow: 0 4px 24px rgba(0, 217, 255, 0.3), inset 0 1px 0 rgba(255,255,255,0.15);
-    transition: transform 0.15s, box-shadow 0.2s;
-    -webkit-tap-highlight-color: transparent;
-    pointer-events: auto;
-    touch-action: manipulation;
-  }
-  #shoot-btn:active {
-    transform: scale(0.92);
-    box-shadow: 0 2px 12px rgba(0, 217, 255, 0.5);
-  }
-  #shoot-btn.visible { display: flex; }
-  #shoot-btn.p2 {
-    background: linear-gradient(135deg, rgba(255,107,53,0.25), rgba(255,200,87,0.25));
-    border-color: rgba(255, 107, 53, 0.5);
-    box-shadow: 0 4px 24px rgba(255, 107, 53, 0.3), inset 0 1px 0 rgba(255,255,255,0.15);
-  }
-
-  /* Loading */
   #loading {
     position: absolute; inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #0a0a15;
-    z-index: 100;
-    transition: opacity 0.5s;
+    display: flex; align-items: center; justify-content: center;
+    background: #0a0a15; z-index: 100; transition: opacity 0.5s;
   }
   #loading.hidden { opacity: 0; pointer-events: none; }
   .spinner {
     width: 38px; height: 38px;
     border: 3px solid rgba(255,255,255,0.08);
-    border-top-color: var(--p1);
-    border-radius: 50%;
+    border-top-color: var(--p1); border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Mobile tweaks */
   @media (max-width: 600px) {
     #hud { padding: calc(10px + var(--safe-top)) 10px calc(10px + var(--safe-bottom)); }
-    .player-card { padding: 8px 12px; min-width: 74px; border-radius: 12px; }
-    .player-score { font-size: 22px; }
-    .player-name { font-size: 8.5px; }
-    .turn-indicator { padding: 7px 11px; font-size: 9.5px; gap: 6px; }
-    .turn-dot { width: 7px; height: 7px; }
-    .power-meter { max-width: 100%; padding: 9px 13px 11px; }
+    .player-badge { padding: 6px 11px; font-size: 10px; gap: 6px; }
+    .badge-dot { width: 7px; height: 7px; }
+    .wins-dot { width: 5px; height: 5px; }
+    .round-info { padding: 6px 12px; font-size: 9px; }
     .controls-hint { font-size: 9.5px; padding: 6px 12px; }
-    .controls-hint .desktop-only { display: none; }
-    .controls-hint .mobile-only { display: inline; }
     .btn { padding: 15px 30px; font-size: 13px; min-width: 210px; }
     .btn-small { padding: 11px 24px; font-size: 11px; min-width: 180px; }
     .final-scores { gap: 32px; }
     .final-score .value { font-size: 40px; }
-    .menu-buttons { gap: 10px; }
+    .big-text { font-size: 32px; }
   }
-
   @media (max-height: 560px) {
     .game-title { font-size: 42px; margin-bottom: 2px; }
     .subtitle { margin-bottom: 18px; font-size: 10px; letter-spacing: 3px; }
@@ -560,47 +346,50 @@
   <div id="vignette"></div>
   <div id="fx-layer"></div>
 
-  <button id="shoot-btn" aria-label="Shoot">SHOOT</button>
+  <!-- Joysticks (mobile) -->
+  <div class="joy" id="joy-p1">
+    <div class="joy-base"></div>
+    <div class="joy-knob"></div>
+  </div>
+  <div class="joy" id="joy-p2">
+    <div class="joy-base"></div>
+    <div class="joy-knob"></div>
+  </div>
 
   <!-- HUD -->
   <div id="hud" class="hidden">
     <div class="top-bar">
-      <div class="player-card p1" id="card-p1">
-        <div class="player-name" id="name-p1">PLAYER 1</div>
-        <div class="player-score" id="score-p1">5</div>
+      <div class="player-badge p1" id="badge-p1">
+        <span class="badge-dot"></span>
+        <span class="badge-name" id="name-p1">YOU</span>
+        <span class="badge-wins" id="wins-p1"></span>
       </div>
-      <div class="turn-indicator p1" id="turn-indicator">
-        <div class="turn-dot"></div>
-        <span id="turn-text">YOUR TURN</span>
-      </div>
-      <div class="player-card p2" id="card-p2">
-        <div class="player-name" id="name-p2">PLAYER 2</div>
-        <div class="player-score" id="score-p2">5</div>
+      <div class="round-info" id="round-info">ROUND 1</div>
+      <div class="player-badge p2" id="badge-p2">
+        <span class="badge-wins" id="wins-p2"></span>
+        <span class="badge-name" id="name-p2">AI</span>
+        <span class="badge-dot"></span>
       </div>
     </div>
 
     <div class="bottom-bar">
-      <div class="power-meter" id="power-meter">
-        <div class="power-label-row">
-          <span class="power-label">POWER</span>
-          <span class="power-value" id="power-value">50%</span>
-        </div>
-        <div class="power-track">
-          <div class="power-fill" id="power-fill"></div>
-        </div>
-      </div>
       <div class="controls-hint">
-        <span class="desktop-only">↑↓ POWER · ←→ AIM · SPACE SHOOT</span>
-        <span class="mobile-only">DRAG TO AIM · RELEASE TO SHOOT</span>
+        <span class="desktop-only" id="hint-desktop">WASD / ARROWS TO MOVE</span>
+        <span class="mobile-only">DRAG ON SCREEN TO MOVE</span>
       </div>
     </div>
+  </div>
+
+  <!-- Countdown -->
+  <div id="countdown" class="countdown hidden">
+    <div class="countdown-num" id="countdown-num">3</div>
   </div>
 
   <!-- Menu -->
   <div id="menu" class="overlay">
     <div class="menu-content">
       <h1 class="game-title">DOBO</h1>
-      <p class="subtitle">Nigerian Rubber Band Game</p>
+      <p class="subtitle">Rubber Band Chase</p>
       <div class="menu-buttons">
         <button class="btn btn-primary" id="start-ai-btn">PLAY VS AI</button>
         <button class="btn" id="start-local-btn">2 PLAYERS</button>
@@ -614,11 +403,11 @@
     <div class="menu-content">
       <h2>HOW TO PLAY</h2>
       <ul class="rules">
-        <li>Each player starts with <strong>5 rubber bands</strong>.</li>
-        <li>Take turns shooting one band onto the field.</li>
-        <li>If your band lands <strong>overlapping</strong> an opponent's band, you capture it!</li>
-        <li>Captured bands are added to your inventory.</li>
-        <li>Run out of bands on your turn and you <strong>lose</strong>.</li>
+        <li>Each player controls <strong>one rubber band</strong> on the arena.</li>
+        <li>Move it around — the ring around each band is the capture zone.</li>
+        <li>Land your band <strong>overlapping</strong> the opponent's ring to win the round.</li>
+        <li>First to <strong>3 rounds</strong> wins the match.</li>
+        <li>Rounds start with a 3-second countdown. Don't get caught!</li>
       </ul>
       <button class="btn btn-small" id="howto-back">BACK</button>
     </div>
@@ -627,14 +416,15 @@
   <!-- Game Over -->
   <div id="gameover" class="overlay hidden">
     <div class="menu-content">
-      <h2 id="winner-text">PLAYER 1 WINS!</h2>
+      <h2 id="winner-text">YOU WIN!</h2>
+      <p id="win-reason" style="opacity:0.6;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:4px;">3 ROUNDS</p>
       <div class="final-scores">
         <div class="final-score p1">
-          <span class="label">PLAYER 1</span>
-          <span class="value" id="final-p1">5</span>
+          <span class="label" id="final-p1-label">YOU</span>
+          <span class="value" id="final-p1">0</span>
         </div>
         <div class="final-score p2">
-          <span class="label" id="final-p2-label">PLAYER 2</span>
+          <span class="label" id="final-p2-label">AI</span>
           <span class="value" id="final-p2">0</span>
         </div>
       </div>
@@ -645,7 +435,6 @@
     </div>
   </div>
 
-  <!-- Loading -->
   <div id="loading">
     <div class="spinner"></div>
   </div>
@@ -666,18 +455,17 @@ import * as THREE from 'three';
    CONFIG
    ============================================================ */
 const CONFIG = {
-  launchZ: 9,
-  launchY: 0.55,
+  fieldRadius: 9,
   bandRadius: 0.5,
   bandTube: 0.11,
-  overlapRadius: 1.35,
-  gravity: -22,
-  elevation: Math.PI / 6,
-  minPower: 6,
-  maxPower: 18,
-  maxYaw: 40 * Math.PI / 180,
-  startingBands: 5,
-  defaultPower: 12,
+  overlapRadius: 1.0,       // distance between centers for a capture
+  playerSpeed: 6.2,
+  aiSpeed: 5.7,
+  roundsToWin: 3,
+  roundStartPos: [
+    new THREE.Vector3(0, 0, 6.5),
+    new THREE.Vector3(0, 0, -6.5),
+  ],
   camLook: new THREE.Vector3(0, 0, 0),
 };
 
@@ -688,9 +476,6 @@ const COLORS = {
   p2Hex: '#ff6b35',
 };
 
-/* ============================================================
-   DEVICE DETECTION
-   ============================================================ */
 const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 const isLowEnd =
   (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
@@ -701,22 +486,17 @@ const isLowEnd =
    ============================================================ */
 const state = {
   gameId: 0,
-  phase: 'menu',          // menu | aiming | ai-aiming | flying | resolving | gameover
-  mode: 'ai',             // 'ai' | 'local'
-  currentPlayer: 1,
-  scores: { 1: CONFIG.startingBands, 2: CONFIG.startingBands },
-  aimYaw: 0,
-  aimPower: CONFIG.defaultPower,
-  bands: [],
-  activeBand: null,
+  phase: 'menu',       // menu | countdown | playing | celebrating | gameover
+  mode: 'ai',          // 'ai' | 'local'
+  roundNumber: 0,
+  roundWins: { 1: 0, 2: 0 },
+  countdown: 0,
+  winner: 0,
   shake: 0,
   time: 0,
   aiTimer: null,
 };
 
-/* ============================================================
-   UTILS
-   ============================================================ */
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b - a) * t;
 
@@ -735,9 +515,7 @@ function initAudio() {
     if (audioCtx.state === 'suspended') audioCtx.resume();
     return;
   }
-  try {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  } catch (e) {}
+  try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
 }
 function beep(freq, dur, type = 'sine', vol = 0.07) {
   if (!audioCtx || audioCtx.state !== 'running') return;
@@ -748,26 +526,20 @@ function beep(freq, dur, type = 'sine', vol = 0.07) {
     osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
     g.gain.setValueAtTime(vol, audioCtx.currentTime);
     g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
-    osc.connect(g);
-    g.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + dur);
+    osc.connect(g); g.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + dur);
   } catch (e) {}
 }
 function chord(freqs, dur, vol = 0.06) {
-  freqs.forEach((f, i) => setTimeout(() => beep(f, dur, 'sine', vol), i * 65));
+  freqs.forEach((f, i) => setTimeout(() => beep(f, dur, 'sine', vol), i * 70));
 }
 
 /* ============================================================
    THREE SETUP
    ============================================================ */
 const canvas = document.getElementById('game-canvas');
-
 const renderer = new THREE.WebGLRenderer({
-  canvas,
-  antialias: !isLowEnd,
-  powerPreference: 'high-performance',
-  stencil: false,
+  canvas, antialias: !isLowEnd, powerPreference: 'high-performance', stencil: false,
 });
 renderer.setPixelRatio(isLowEnd ? 1 : Math.min(window.devicePixelRatio, 1.75));
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -776,40 +548,34 @@ renderer.shadowMap.enabled = false;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0d0d1a);
-scene.fog = new THREE.Fog(0x0d0d1a, 26, 55);
+scene.fog = new THREE.Fog(0x0d0d1a, 28, 58);
 
-const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 140);
-camera.position.set(0, 20, 15);
+const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 160);
+camera.position.set(0, 24, 6);
 camera.lookAt(CONFIG.camLook);
 
-/* ============================================================
-   LIGHTS
-   ============================================================ */
+/* Lights */
 scene.add(new THREE.AmbientLight(0xffffff, 0.55));
 scene.add(new THREE.HemisphereLight(0xaaccff, 0x4a3a2a, 0.55));
-const keyLight = new THREE.DirectionalLight(0xfff2d6, 1.0);
-keyLight.position.set(8, 18, 6);
+const keyLight = new THREE.DirectionalLight(0xfff2d6, 1.05);
+keyLight.position.set(8, 20, 6);
 scene.add(keyLight);
-const rimLight = new THREE.DirectionalLight(0x4a6bff, 0.35);
+const rimLight = new THREE.DirectionalLight(0x4a6bff, 0.4);
 rimLight.position.set(-8, 10, -10);
 scene.add(rimLight);
 
-/* ============================================================
-   GROUND
-   ============================================================ */
+/* Ground texture */
 function createGroundTexture() {
   const size = 512;
   const cv = document.createElement('canvas');
   cv.width = cv.height = size;
   const ctx = cv.getContext('2d');
-
   const grad = ctx.createRadialGradient(size/2, size/2, 20, size/2, size/2, size/2);
   grad.addColorStop(0, '#a08a6e');
   grad.addColorStop(0.55, '#8a7358');
   grad.addColorStop(1, '#5e4c3a');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, size, size);
-
   const img = ctx.getImageData(0, 0, size, size);
   const d = img.data;
   for (let i = 0; i < d.length; i += 4) {
@@ -819,19 +585,14 @@ function createGroundTexture() {
     d[i+2] = clamp(d[i+2] + n, 0, 255);
   }
   ctx.putImageData(img, 0, 0);
-
   for (let i = 0; i < 450; i++) {
-    const x = Math.random() * size;
-    const y = Math.random() * size;
+    const x = Math.random() * size, y = Math.random() * size;
     const r = Math.random() * 2.2 + 0.4;
     ctx.fillStyle = Math.random() < 0.55
       ? `rgba(30,20,10,${Math.random() * 0.12})`
       : `rgba(255,240,210,${Math.random() * 0.06})`;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
   }
-
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 1;
@@ -839,84 +600,61 @@ function createGroundTexture() {
 }
 
 const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(44, 44),
+  new THREE.PlaneGeometry(60, 60),
   new THREE.MeshLambertMaterial({ map: createGroundTexture() })
 );
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
 
-/* Field markings */
-const markMat = new THREE.MeshBasicMaterial({
-  color: 0xffffff, transparent: true, opacity: 0.08,
+/* Arena ring markings */
+const R = CONFIG.fieldRadius;
+const edgeMat = new THREE.MeshBasicMaterial({
+  color: 0x6688ff, transparent: true, opacity: 0.45,
   side: THREE.DoubleSide, depthWrite: false,
 });
-const centerRing = new THREE.Mesh(new THREE.RingGeometry(2.8, 3.0, 48), markMat);
-centerRing.rotation.x = -Math.PI / 2;
-centerRing.position.y = 0.012;
-scene.add(centerRing);
+const edge = new THREE.Mesh(new THREE.RingGeometry(R - 0.15, R + 0.05, 80), edgeMat);
+edge.rotation.x = -Math.PI / 2;
+edge.position.y = 0.012;
+scene.add(edge);
 
-const lineH = new THREE.Mesh(new THREE.PlaneGeometry(20, 0.06), markMat);
-lineH.rotation.x = -Math.PI / 2;
-lineH.position.y = 0.011;
-scene.add(lineH);
-const lineV = new THREE.Mesh(new THREE.PlaneGeometry(0.06, 20), markMat);
-lineV.rotation.x = -Math.PI / 2;
-lineV.position.y = 0.011;
-scene.add(lineV);
-
-const boundRing = new THREE.Mesh(
-  new THREE.RingGeometry(10, 10.15, 64),
-  new THREE.MeshBasicMaterial({
-    color: 0xffffff, transparent: true, opacity: 0.1,
-    side: THREE.DoubleSide, depthWrite: false,
-  })
-);
-boundRing.rotation.x = -Math.PI / 2;
-boundRing.position.y = 0.013;
-scene.add(boundRing);
-
-/* ============================================================
-   LAUNCH PADS
-   ============================================================ */
-function createLaunchPad(player) {
-  const color = player === 1 ? COLORS.p1 : COLORS.p2;
-  const group = new THREE.Group();
-
+// Concentric inner rings
+for (let r = 3; r < R - 0.5; r += 3) {
   const ringMat = new THREE.MeshBasicMaterial({
-    color, transparent: true, opacity: 0.55,
+    color: 0xffffff, transparent: true, opacity: 0.05,
     side: THREE.DoubleSide, depthWrite: false,
   });
-  const ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.05, 40), ringMat);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(r - 0.04, r + 0.04, 64), ringMat);
   ring.rotation.x = -Math.PI / 2;
-  ring.position.y = 0.014;
-  group.add(ring);
-
-  const innerMat = new THREE.MeshBasicMaterial({
-    color, transparent: true, opacity: 0.1,
-    side: THREE.DoubleSide, depthWrite: false,
-  });
-  const inner = new THREE.Mesh(new THREE.CircleGeometry(0.85, 32), innerMat);
-  inner.rotation.x = -Math.PI / 2;
-  inner.position.y = 0.013;
-  group.add(inner);
-
-  const z = player === 1 ? CONFIG.launchZ : -CONFIG.launchZ;
-  group.position.set(0, 0, z);
-  group.userData = { ring, ringMat, innerMat };
-  return group;
+  ring.position.y = 0.008;
+  scene.add(ring);
 }
 
-const pad1 = createLaunchPad(1);
-const pad2 = createLaunchPad(2);
-scene.add(pad1, pad2);
+// Center cross
+const centerCrossMat = new THREE.MeshBasicMaterial({
+  color: 0xffffff, transparent: true, opacity: 0.07,
+  side: THREE.DoubleSide, depthWrite: false,
+});
+const crossH = new THREE.Mesh(new THREE.PlaneGeometry(R * 2, 0.06), centerCrossMat);
+crossH.rotation.x = -Math.PI / 2; crossH.position.y = 0.006; scene.add(crossH);
+const crossV = new THREE.Mesh(new THREE.PlaneGeometry(0.06, R * 2), centerCrossMat);
+crossV.rotation.x = -Math.PI / 2; crossV.position.y = 0.006; scene.add(crossV);
 
-/* Decorative stones */
+// Glowing arena wall
+const wallMat = new THREE.MeshBasicMaterial({
+  color: 0x4466ff, transparent: true, opacity: 0.12,
+  side: THREE.DoubleSide, depthWrite: false,
+});
+const wall = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.1, R + 0.1, 0.55, 64, 1, true), wallMat);
+wall.position.y = 0.275;
+scene.add(wall);
+
+/* Decorative stones outside arena */
 const stoneGeo = new THREE.DodecahedronGeometry(0.35, 0);
 const stoneMatA = new THREE.MeshLambertMaterial({ color: 0x5a4d3f });
 const stoneMatB = new THREE.MeshLambertMaterial({ color: 0x3d3428 });
-for (let i = 0; i < 20; i++) {
-  const angle = (i / 20) * Math.PI * 2 + Math.random() * 0.3;
-  const radius = 12.5 + Math.random() * 3.5;
+for (let i = 0; i < 24; i++) {
+  const angle = (i / 24) * Math.PI * 2 + Math.random() * 0.4;
+  const radius = 11.5 + Math.random() * 4;
   const stone = new THREE.Mesh(stoneGeo, Math.random() < 0.5 ? stoneMatA : stoneMatB);
   stone.position.set(Math.cos(angle) * radius, 0.05 + Math.random() * 0.1, Math.sin(angle) * radius);
   const s = 0.5 + Math.random() * 0.9;
@@ -926,91 +664,82 @@ for (let i = 0; i < 20; i++) {
 }
 
 /* ============================================================
-   RUBBER BAND
+   BAND
    ============================================================ */
-const bandGeo = new THREE.TorusGeometry(CONFIG.bandRadius, CONFIG.bandTube, 8, 20);
+const bandGeo = new THREE.TorusGeometry(CONFIG.bandRadius, CONFIG.bandTube, 8, 24);
 const bandMatP1 = new THREE.MeshLambertMaterial({
-  color: COLORS.p1, emissive: 0x003844, emissiveIntensity: 1,
+  color: COLORS.p1, emissive: 0x004455, emissiveIntensity: 1.2,
 });
 const bandMatP2 = new THREE.MeshLambertMaterial({
-  color: COLORS.p2, emissive: 0x3a1400, emissiveIntensity: 1,
+  color: COLORS.p2, emissive: 0x552200, emissiveIntensity: 1.2,
 });
-
-// Shadow uses a pooled material for opacity tuning
 const shadowGeo = new THREE.CircleGeometry(1, 16);
 
 class Band {
-  constructor(owner, position, velocity) {
-    this.owner = owner;
-    this.position = position.clone();
-    this.velocity = velocity.clone();
-    this.settled = false;
-    this.captured = false;
-    this.captureT = 0;
-    this.restY = CONFIG.bandTube;
-    this.spin = Math.random() * Math.PI * 2;
-    this.rotSpeed = (Math.random() - 0.5) * 8;
+  constructor(player) {
+    this.player = player;
+    this.pos = new THREE.Vector3(0, 0.11, player === 1 ? 6.5 : -6.5);
+    this.prevPos = this.pos.clone();
+    this.vel = new THREE.Vector3();
+    this.spin = 0;
 
-    this.mesh = new THREE.Mesh(bandGeo, owner === 1 ? bandMatP1 : bandMatP2);
-    this.mesh.position.copy(this.position);
+    this.mesh = new THREE.Mesh(bandGeo, player === 1 ? bandMatP1 : bandMatP2);
+    this.mesh.position.copy(this.pos);
     this.mesh.rotation.x = Math.PI / 2;
-    this.mesh.rotation.z = this.spin;
     scene.add(this.mesh);
 
-    // Per-band shadow material so opacity can vary without affecting others
     this.shadowMat = new THREE.MeshBasicMaterial({
-      color: 0x000000, transparent: true, opacity: 0.28, depthWrite: false,
+      color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false,
     });
     this.shadow = new THREE.Mesh(shadowGeo, this.shadowMat);
     this.shadow.rotation.x = -Math.PI / 2;
-    this.shadow.position.set(this.position.x, 0.015, this.position.z);
-    this.shadow.scale.setScalar(CONFIG.bandRadius * 0.85);
+    this.shadow.position.set(this.pos.x, 0.015, this.pos.z);
+    this.shadow.scale.setScalar(CONFIG.bandRadius * 0.95);
     scene.add(this.shadow);
   }
 
-  update(dt) {
-    if (this.captured) {
-      this.captureT += dt;
-      const t = clamp(this.captureT / 0.5, 0, 1);
-      const s = 1 - t;
-      this.mesh.scale.setScalar(Math.max(0.001, s));
-      this.mesh.position.y = this.position.y + t * 1.6;
-      this.mesh.rotation.z += dt * 22;
-      this.shadowMat.opacity = 0.28 * (1 - t);
-      this.shadow.scale.setScalar(CONFIG.bandRadius * 0.85 * (1 - t));
-      return;
-    }
-    if (this.settled) return;
+  reset(x, z) {
+    this.pos.set(x, 0.11, z);
+    this.prevPos.copy(this.pos);
+    this.vel.set(0, 0, 0);
+    this.mesh.position.copy(this.pos);
+    this.mesh.scale.setScalar(1);
+    this.mesh.rotation.z = 0;
+    this.shadow.position.set(this.pos.x, 0.015, this.pos.z);
+    this.shadow.scale.setScalar(CONFIG.bandRadius * 0.95);
+    this.shadowMat.opacity = 0.3;
+  }
 
-    this.velocity.y += CONFIG.gravity * dt;
-    this.position.addScaledVector(this.velocity, dt);
+  update(dt, targetVelX, targetVelZ) {
+    // Smooth velocity approach
+    const k = 1 - Math.exp(-dt * 26);
+    this.vel.x = lerp(this.vel.x, targetVelX, k);
+    this.vel.z = lerp(this.vel.z, targetVelZ, k);
 
-    if (this.position.y <= this.restY) {
-      this.position.y = this.restY;
-      if (Math.abs(this.velocity.y) > 1.8) {
-        this.velocity.y = -this.velocity.y * 0.32;
-        this.velocity.x *= 0.7;
-        this.velocity.z *= 0.7;
-        beep(220 + Math.random() * 40, 0.05, 'sine', 0.03);
-      } else {
-        this.velocity.y = 0;
-        this.velocity.x *= 0.85;
-        this.velocity.z *= 0.85;
-        if (Math.abs(this.velocity.x) < 0.15 && Math.abs(this.velocity.z) < 0.15) {
-          this.velocity.set(0, 0, 0);
-          this.settled = true;
-          this.mesh.rotation.z = this.spin;
-        }
-      }
+    // Save prev
+    this.prevPos.copy(this.pos);
+
+    // Move
+    this.pos.x += this.vel.x * dt;
+    this.pos.z += this.vel.z * dt;
+
+    // Clamp to circular arena
+    const r = Math.hypot(this.pos.x, this.pos.z);
+    const maxR = CONFIG.fieldRadius - CONFIG.bandRadius;
+    if (r > maxR) {
+      const s = maxR / r;
+      this.pos.x *= s;
+      this.pos.z *= s;
     }
 
-    this.mesh.position.copy(this.position);
-    this.mesh.rotation.z += this.rotSpeed * dt;
+    // Update mesh
+    this.mesh.position.copy(this.pos);
+    this.mesh.rotation.z += dt * 4;  // slow spin
+    this.shadow.position.set(this.pos.x, 0.015, this.pos.z);
+  }
 
-    const hf = clamp(1 - (this.position.y - this.restY) / 4, 0.3, 1);
-    this.shadow.position.set(this.position.x, 0.015, this.position.z);
-    this.shadow.scale.setScalar(CONFIG.bandRadius * 0.85 * hf);
-    this.shadowMat.opacity = 0.28 * hf;
+  celebrate() {
+    // squash-stretch pulse
   }
 
   dispose() {
@@ -1020,224 +749,288 @@ class Band {
   }
 }
 
-/* ============================================================
-   TRAJECTORY PREVIEW
-   ============================================================ */
-const MAX_TRAJ = 80;
-const trajGeo = new THREE.BufferGeometry();
-const trajPositions = new Float32Array(MAX_TRAJ * 3);
-trajGeo.setAttribute('position', new THREE.BufferAttribute(trajPositions, 3));
-trajGeo.setDrawRange(0, 0);
+const bands = [new Band(1), new Band(2)];
 
-const trajPoints = new THREE.Points(trajGeo, new THREE.PointsMaterial({
-  color: 0xffffff, size: 0.17, sizeAttenuation: true,
-  transparent: true, opacity: 0.6, depthWrite: false,
+/* Danger-zone rings around each band */
+const ringGeo = new THREE.RingGeometry(CONFIG.overlapRadius - 0.045, CONFIG.overlapRadius + 0.02, 64);
+const dangerRing1 = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({
+  color: COLORS.p1, transparent: true, opacity: 0.4,
+  side: THREE.DoubleSide, depthWrite: false,
 }));
-trajPoints.frustumCulled = false;
-scene.add(trajPoints);
+dangerRing1.rotation.x = -Math.PI / 2;
+dangerRing1.position.y = 0.02;
+scene.add(dangerRing1);
 
-const landMarker = new THREE.Mesh(
-  new THREE.RingGeometry(0.55, 0.72, 28),
-  new THREE.MeshBasicMaterial({
-    color: 0xffffff, transparent: true, opacity: 0.75,
-    side: THREE.DoubleSide, depthWrite: false,
-  })
-);
-landMarker.rotation.x = -Math.PI / 2;
-landMarker.position.y = 0.018;
-landMarker.visible = false;
-scene.add(landMarker);
+const dangerRing2 = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({
+  color: COLORS.p2, transparent: true, opacity: 0.4,
+  side: THREE.DoubleSide, depthWrite: false,
+}));
+dangerRing2.rotation.x = -Math.PI / 2;
+dangerRing2.position.y = 0.02;
+scene.add(dangerRing2);
 
 /* ============================================================
-   PHYSICS HELPERS
+   INPUT
    ============================================================ */
-function getLaunchPos(owner) {
-  const z = owner === 1 ? CONFIG.launchZ : -CONFIG.launchZ;
-  return new THREE.Vector3(0, CONFIG.launchY, z);
-}
+const keys = {};
 
-function computeVelocity(owner, yaw, power) {
-  const hx = Math.sin(yaw);
-  const hz = Math.cos(yaw) * (owner === 1 ? -1 : 1);
-  const vy = power * Math.sin(CONFIG.elevation);
-  const vh = power * Math.cos(CONFIG.elevation);
-  return new THREE.Vector3(hx * vh, vy, hz * vh);
-}
-
-function computeTrajectory(owner, yaw, power, maxSteps = MAX_TRAJ) {
-  const pos = getLaunchPos(owner);
-  const vel = computeVelocity(owner, yaw, power);
-  const dt = 0.045;
-  const pts = [];
-  for (let i = 0; i < maxSteps; i++) {
-    pts.push(pos.clone());
-    vel.y += CONFIG.gravity * dt;
-    pos.addScaledVector(vel, dt);
-    if (pos.y < 0.05) {
-      pts.push(new THREE.Vector3(pos.x, 0.02, pos.z));
-      break;
+window.addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+  if (e.code === 'Space') e.preventDefault();
+  if (e.code === 'Escape') {
+    if (state.phase !== 'menu' && state.phase !== 'gameover') {
+      goToMenu();
     }
   }
-  return pts;
-}
+  if (e.code === 'KeyR' && state.phase === 'gameover') {
+    startMatch(state.mode);
+  }
+});
+window.addEventListener('keyup', (e) => { keys[e.code] = false; });
 
-/* ============================================================
-   AI LOGIC
-   ============================================================ */
-function computeAIShot(owner) {
-  const opponent = owner === 1 ? 2 : 1;
-  const launch = getLaunchPos(owner);
-
-  // Find opponent bands on the field
-  const targets = state.bands.filter(b => b.owner === opponent && !b.captured && b.settled);
-
-  let targetPos;
-  let aimError = 0;
-
-  if (targets.length > 0) {
-    // Pick the closest one
-    let best = null;
-    let bestDist = Infinity;
-    for (const t of targets) {
-      const d = Math.hypot(t.position.x - launch.x, t.position.z - launch.z);
-      if (d < bestDist) { bestDist = d; best = t; }
+/* --- Joystick --- */
+function makeJoystick(id) {
+  const el = document.getElementById(id);
+  const knob = el.querySelector('.joy-knob');
+  const maxRadius = 55;
+  return {
+    el, knob,
+    active: false,
+    touchId: null,
+    originX: 0, originY: 0,
+    dx: 0, dy: 0,
+    show(x, y) {
+      this.el.style.left = x + 'px';
+      this.el.style.top = y + 'px';
+      this.el.classList.add('visible');
+      this.originX = x;
+      this.originY = y;
+      this.dx = 0; this.dy = 0;
+      this.knob.style.transform = 'translate(-50%, -50%)';
+    },
+    update(x, y) {
+      const dx = x - this.originX;
+      const dy = y - this.originY;
+      const dist = Math.hypot(dx, dy);
+      const angle = Math.atan2(dy, dx);
+      const clamped = Math.min(dist, maxRadius);
+      const kx = Math.cos(angle) * clamped;
+      const ky = Math.sin(angle) * clamped;
+      this.knob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
+      const deadzone = 6;
+      if (dist < deadzone) {
+        this.dx = 0; this.dy = 0;
+      } else {
+        const norm = Math.min(dist, maxRadius) / maxRadius;
+        // Ease-in for fine control near center
+        const eased = norm * norm * (3 - 2 * norm);
+        this.dx = Math.cos(angle) * eased;
+        this.dy = Math.sin(angle) * eased;
+      }
+    },
+    hide() {
+      this.el.classList.remove('visible');
+      this.dx = 0; this.dy = 0;
+      this.active = false;
+      this.touchId = null;
     }
-    targetPos = best.position.clone();
-    aimError = 0.035; // radians of error
+  };
+}
+
+const joyP1 = makeJoystick('joy-p1');
+const joyP2 = makeJoystick('joy-p2');
+
+const activeTouches = new Map();  // touchId -> joystick
+
+function getZone(x) {
+  if (state.mode === 'ai') return 1;
+  return x < window.innerWidth / 2 ? 1 : 2;
+}
+
+canvas.addEventListener('touchstart', (e) => {
+  if (state.phase !== 'countdown' && state.phase !== 'playing') return;
+  e.preventDefault();
+  initAudio();
+  for (const t of e.changedTouches) {
+    const zone = getZone(t.clientX);
+    const joy = zone === 1 ? joyP1 : joyP2;
+    if (joy.active) continue;
+    joy.active = true;
+    joy.touchId = t.identifier;
+    joy.show(t.clientX, t.clientY);
+    activeTouches.set(t.identifier, joy);
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    const joy = activeTouches.get(t.identifier);
+    if (joy) joy.update(t.clientX, t.clientY);
+  }
+}, { passive: false });
+
+function endTouch(e) {
+  for (const t of e.changedTouches) {
+    const joy = activeTouches.get(t.identifier);
+    if (joy) {
+      joy.hide();
+      activeTouches.delete(t.identifier);
+    }
+  }
+}
+canvas.addEventListener('touchend', endTouch);
+canvas.addEventListener('touchcancel', endTouch);
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+/* ============================================================
+   INPUT RESOLUTION
+   ============================================================ */
+function getPlayerInput(player) {
+  let ix = 0, iy = 0;
+
+  if (player === 1) {
+    if (keys['KeyW']) iy -= 1;
+    if (keys['KeyS']) iy += 1;
+    if (keys['KeyA']) ix -= 1;
+    if (keys['KeyD']) ix += 1;
+    if (state.mode === 'ai') {
+      if (keys['ArrowUp']) iy -= 1;
+      if (keys['ArrowDown']) iy += 1;
+      if (keys['ArrowLeft']) ix -= 1;
+      if (keys['ArrowRight']) ix += 1;
+    }
+    ix += joyP1.dx;
+    iy += joyP1.dy;
   } else {
-    // No target — aim toward center-ish
-    targetPos = new THREE.Vector3(
-      (Math.random() - 0.5) * 5,
-      0,
-      (Math.random() - 0.5) * 5
-    );
-    aimError = 0.06;
+    // Player 2 — arrows in local mode only
+    if (state.mode === 'local') {
+      if (keys['ArrowUp']) iy -= 1;
+      if (keys['ArrowDown']) iy += 1;
+      if (keys['ArrowLeft']) ix -= 1;
+      if (keys['ArrowRight']) ix += 1;
+    }
+    ix += joyP2.dx;
+    iy += joyP2.dy;
   }
 
-  // Compute yaw to target
-  const dx = targetPos.x - launch.x;
-  const dz = targetPos.z - launch.z;
-  let yaw;
-  if (owner === 1) {
-    yaw = Math.atan2(dx, -dz);
-  } else {
-    yaw = Math.atan2(dx, dz);
-  }
-
-  // Find best power by simulating
-  let bestPower = CONFIG.defaultPower;
-  let bestErr = Infinity;
-  const steps = 40;
-  const step = (CONFIG.maxPower - CONFIG.minPower) / steps;
-  for (let i = 0; i <= steps; i++) {
-    const p = CONFIG.minPower + i * step;
-    const pts = computeTrajectory(owner, yaw, p, 200);
-    const last = pts[pts.length - 1];
-    const ldx = last.x - targetPos.x;
-    const ldz = last.z - targetPos.z;
-    const err = Math.sqrt(ldx * ldx + ldz * ldz);
-    if (err < bestErr) { bestErr = err; bestPower = p; }
-  }
-
-  // Apply human-like error
-  yaw += (Math.random() - 0.5) * aimError * 2;
-  bestPower += (Math.random() - 0.5) * 1.2;
-  bestPower = clamp(bestPower, CONFIG.minPower, CONFIG.maxPower);
-
-  return { yaw, power: bestPower };
+  const len = Math.hypot(ix, iy);
+  if (len > 1) { ix /= len; iy /= len; }
+  return { x: ix, y: iy };
 }
 
 /* ============================================================
-   UI ELEMENTS
+   AI
+   ============================================================ */
+const aiState = {
+  targetX: 0,
+  targetZ: 0,
+  jitterTimer: 0,
+  jitterX: 0,
+  jitterZ: 0,
+};
+
+function getAIInput() {
+  const player = bands[0];
+  const ai = bands[1];
+
+  // Predict player position slightly
+  const predict = 0.22;
+  let targetX = player.pos.x + player.vel.x * predict;
+  let targetZ = player.pos.z + player.vel.z * predict;
+
+  // Cut-off bias: push target slightly toward the arena center,
+  // which naturally makes AI take shorter paths than a circling player
+  const toCenterX = -player.pos.x;
+  const toCenterZ = -player.pos.z;
+  const centerLen = Math.hypot(toCenterX, toCenterZ) || 1;
+  const cutoff = 1.4;
+  targetX += (toCenterX / centerLen) * cutoff;
+  targetZ += (toCenterZ / centerLen) * cutoff;
+
+  // Add slow wobble for a human feel
+  aiState.jitterTimer -= 1/60;
+  if (aiState.jitterTimer <= 0) {
+    aiState.jitterTimer = 0.9 + Math.random() * 0.6;
+    aiState.jitterX = (Math.random() - 0.5) * 0.6;
+    aiState.jitterZ = (Math.random() - 0.5) * 0.6;
+  }
+  targetX += aiState.jitterX;
+  targetZ += aiState.jitterZ;
+
+  const dx = targetX - ai.pos.x;
+  const dz = targetZ - ai.pos.z;
+  const d = Math.hypot(dx, dz);
+  if (d < 0.15) return { x: 0, y: 0 };
+  return { x: dx / d, y: dz / d };
+}
+
+/* ============================================================
+   UI
    ============================================================ */
 const hudEl = document.getElementById('hud');
-const cardP1 = document.getElementById('card-p1');
-const cardP2 = document.getElementById('card-p2');
+const badgeP1 = document.getElementById('badge-p1');
+const badgeP2 = document.getElementById('badge-p2');
 const nameP1 = document.getElementById('name-p1');
 const nameP2 = document.getElementById('name-p2');
-const scoreP1 = document.getElementById('score-p1');
-const scoreP2 = document.getElementById('score-p2');
-const turnIndicator = document.getElementById('turn-indicator');
-const turnText = document.getElementById('turn-text');
-const powerFill = document.getElementById('power-fill');
-const powerValue = document.getElementById('power-value');
-const powerMeter = document.getElementById('power-meter');
+const winsP1 = document.getElementById('wins-p1');
+const winsP2 = document.getElementById('wins-p2');
+const roundInfo = document.getElementById('round-info');
+const countdownEl = document.getElementById('countdown');
+const countdownNum = document.getElementById('countdown-num');
 const menuEl = document.getElementById('menu');
 const howtoEl = document.getElementById('howto');
 const gameoverEl = document.getElementById('gameover');
 const winnerText = document.getElementById('winner-text');
+const winReason = document.getElementById('win-reason');
 const finalP1 = document.getElementById('final-p1');
 const finalP2 = document.getElementById('final-p2');
+const finalP1Label = document.getElementById('final-p1-label');
 const finalP2Label = document.getElementById('final-p2-label');
 const fxLayer = document.getElementById('fx-layer');
-const shootBtn = document.getElementById('shoot-btn');
+const hintDesktop = document.getElementById('hint-desktop');
 
-/* ============================================================
-   UI UPDATES
-   ============================================================ */
-function updateUI() {
-  scoreP1.textContent = state.scores[1];
-  scoreP2.textContent = state.scores[2];
-
-  const p = state.currentPlayer;
-  const isAITurn = state.mode === 'ai' && p === 2;
-  const active = state.phase !== 'gameover' && state.phase !== 'menu';
-
-  cardP1.classList.toggle('active', p === 1 && active);
-  cardP2.classList.toggle('active', p === 2 && active);
-
-  turnIndicator.classList.toggle('p1', p === 1);
-  turnIndicator.classList.toggle('p2', p === 2);
-  turnIndicator.classList.toggle('thinking', isAITurn && state.phase === 'ai-aiming');
-
-  if (state.phase === 'gameover') {
-    turnText.textContent = 'GAME OVER';
-  } else if (isAITurn && state.phase === 'ai-aiming') {
-    turnText.textContent = 'AI THINKING';
-  } else if (state.phase === 'resolving') {
-    turnText.textContent = 'CHECKING...';
-  } else {
-    turnText.textContent = state.mode === 'ai' && p === 2 ? 'AI TURN' : `PLAYER ${p}'S TURN`;
+function renderWinDots(container, count, total) {
+  container.innerHTML = '';
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('div');
+    d.className = 'wins-dot' + (i < count ? ' filled' : '');
+    container.appendChild(d);
   }
-
-  // Power meter
-  const pct = (state.aimPower - CONFIG.minPower) / (CONFIG.maxPower - CONFIG.minPower);
-  powerFill.style.width = (pct * 100) + '%';
-  powerValue.textContent = Math.round(pct * 100) + '%';
-
-  const accent = p === 1 ? '#00d9ff' : '#ff6b35';
-  powerFill.style.background = `linear-gradient(90deg, #00e08a 0%, #ffd93d 45%, ${accent} 100%)`;
-  powerMeter.classList.toggle('hidden', state.phase !== 'aiming' && state.phase !== 'ai-aiming');
-
-  // Shoot button (mobile only)
-  const showShoot = isTouch && state.phase === 'aiming' && !isAITurn;
-  shootBtn.classList.toggle('visible', showShoot);
-  shootBtn.classList.toggle('p2', p === 2);
 }
 
-function pulseScore(player) {
-  const el = player === 1 ? scoreP1 : scoreP2;
-  el.classList.remove('pop');
-  void el.offsetWidth;
-  el.classList.add('pop');
+function updateUI() {
+  const p1Name = state.mode === 'ai' ? 'YOU' : 'P1';
+  const p2Name = state.mode === 'ai' ? 'AI' : 'P2';
+  nameP1.textContent = p1Name;
+  nameP2.textContent = p2Name;
+  finalP1Label.textContent = p1Name;
+  finalP2Label.textContent = p2Name;
+
+  renderWinDots(winsP1, state.roundWins[1], CONFIG.roundsToWin);
+  renderWinDots(winsP2, state.roundWins[2], CONFIG.roundsToWin);
+
+  roundInfo.textContent = `ROUND ${state.roundNumber}`;
+
+  badgeP1.classList.toggle('active', state.phase === 'playing' || state.phase === 'countdown');
+  badgeP2.classList.toggle('active', state.phase === 'playing' || state.phase === 'countdown');
 }
 
-function showFloatingText(text, worldPos, colorHex) {
+function showBigText(text, worldPos, colorHex) {
   const v = worldPos.clone();
   v.y = 1.2;
   v.project(camera);
   if (v.z > 1) return;
   const x = (v.x * 0.5 + 0.5) * window.innerWidth;
   const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
-
   const el = document.createElement('div');
-  el.className = 'float-text';
+  el.className = 'big-text';
   el.textContent = text;
   el.style.color = colorHex;
   el.style.left = x + 'px';
   el.style.top = y + 'px';
   fxLayer.appendChild(el);
-  setTimeout(() => el.remove(), 1300);
+  setTimeout(() => el.remove(), 1500);
 }
 
 function showScreen(screen) {
@@ -1254,424 +1047,236 @@ function triggerShake(amount) {
 /* ============================================================
    GAME FLOW
    ============================================================ */
-function startGame(mode) {
+function startMatch(mode) {
   clearTimeout(state.aiTimer);
   state.gameId++;
   state.mode = mode;
-  state.phase = 'aiming';
-  state.currentPlayer = 1;
-  state.scores = { 1: CONFIG.startingBands, 2: CONFIG.startingBands };
-  state.aimYaw = 0;
-  state.aimPower = CONFIG.defaultPower;
-  state.activeBand = null;
-  state.shake = 0;
-
-  for (const b of state.bands) b.dispose();
-  state.bands = [];
-
-  nameP1.textContent = 'PLAYER 1';
-  nameP2.textContent = mode === 'ai' ? 'AI' : 'PLAYER 2';
-  finalP2Label.textContent = mode === 'ai' ? 'AI' : 'PLAYER 2';
+  state.roundWins = { 1: 0, 2: 0 };
+  state.roundNumber = 0;
+  state.winner = 0;
 
   showScreen('game');
   updateUI();
   initAudio();
-  beep(660, 0.08, 'sine', 0.06);
+  startRound();
 }
 
-function shoot() {
-  if (state.phase !== 'aiming' && state.phase !== 'ai-aiming') return;
-  if (state.scores[state.currentPlayer] <= 0) return;
+function startRound() {
+  state.roundNumber++;
+  state.phase = 'countdown';
+  state.countdown = 3.0;
+  state.winner = 0;
 
-  initAudio();
-  state.scores[state.currentPlayer]--;
+  // Reset bands to opposite sides
+  bands[0].reset(0, 6.5);
+  bands[1].reset(0, -6.5);
+  aiState.jitterTimer = 0;
+  aiState.jitterX = 0;
+  aiState.jitterZ = 0;
+
   updateUI();
 
-  const pos = getLaunchPos(state.currentPlayer);
-  const vel = computeVelocity(state.currentPlayer, state.aimYaw, state.aimPower);
-  const band = new Band(state.currentPlayer, pos, vel);
-  state.bands.push(band);
-  state.activeBand = band;
-  state.phase = 'flying';
+  // Hide countdown initially, will be shown in update
+  countdownEl.classList.remove('hidden');
+  countdownNum.textContent = '3';
+  countdownNum.classList.remove('go');
 
-  beep(520, 0.06, 'square', 0.05);
-  setTimeout(() => beep(340, 0.08, 'square', 0.04), 40);
-  vibrate(15);
-
-  trajGeo.setDrawRange(0, 0);
-  landMarker.visible = false;
-  updateUI();
+  beep(660, 0.1, 'sine', 0.06);
 }
 
-function onBandSettled(band) {
-  if (state.phase !== 'flying') return;
-  state.phase = 'resolving';
+function beginPlaying() {
+  state.phase = 'playing';
+  countdownEl.classList.add('hidden');
+  beep(880, 0.12, 'sine', 0.08);
+  setTimeout(() => beep(1320, 0.14, 'sine', 0.07), 100);
+  vibrate(25);
+}
+
+function checkOverlap() {
+  const a = bands[0], b = bands[1];
+  const dx = a.pos.x - b.pos.x;
+  const dz = a.pos.z - b.pos.z;
+  const dist = Math.hypot(dx, dz);
+
+  if (dist >= CONFIG.overlapRadius) return 0;
+
+  // Determine who caused the overlap.
+  // Approach: compare "P1's new pos vs P2's old pos" and vice versa.
+  const d1 = Math.hypot(a.pos.x - b.prevPos.x, a.pos.z - b.prevPos.z);
+  const d2 = Math.hypot(b.pos.x - a.prevPos.x, b.pos.z - a.prevPos.z);
+  const aCaused = d1 < CONFIG.overlapRadius;
+  const bCaused = d2 < CONFIG.overlapRadius;
+
+  if (aCaused && !bCaused) return 1;
+  if (bCaused && !aCaused) return 2;
+
+  // Both or neither moved into each other — use approach velocity
+  const toB = new THREE.Vector2(b.pos.x - a.pos.x, b.pos.z - a.pos.z).normalize();
+  const toA = new THREE.Vector2(a.pos.x - b.pos.x, a.pos.z - b.pos.z).normalize();
+  const va = a.vel.x * toB.x + a.vel.z * toB.y;
+  const vb = b.vel.x * toA.x + b.vel.z * toA.y;
+
+  if (Math.abs(va - vb) < 0.15) return 0; // truly simultaneous, ignore
+  return va > vb ? 1 : 2;
+}
+
+function endRound(winner) {
+  state.phase = 'celebrating';
+  state.winner = winner;
+  state.roundWins[winner]++;
   updateUI();
+
+  const wBand = bands[winner - 1];
+  const colorHex = winner === 1 ? COLORS.p1Hex : COLORS.p2Hex;
+  const label = winner === 1
+    ? (state.mode === 'ai' ? 'YOU WIN!' : 'P1 WINS!')
+    : (state.mode === 'ai' ? 'CAUGHT!' : 'P2 WINS!');
+
+  showBigText(label, wBand.pos.clone(), colorHex);
+  triggerShake(0.5);
+  vibrate([50, 40, 90]);
+
+  chord([523, 659, 784, 1047], 0.35, 0.07);
+
+  // Freeze bands
+  bands[0].vel.set(0, 0, 0);
+  bands[1].vel.set(0, 0, 0);
+  joyP1.hide(); joyP2.hide();
+  activeTouches.clear();
 
   const myGameId = state.gameId;
-  setTimeout(() => {
+  state.aiTimer = setTimeout(() => {
     if (state.gameId !== myGameId) return;
-    resolveOverlaps(band);
-  }, 350);
-}
-
-function resolveOverlaps(band) {
-  const opponent = band.owner === 1 ? 2 : 1;
-  const captured = [];
-
-  for (const other of state.bands) {
-    if (other === band) continue;
-    if (other.owner !== opponent) continue;
-    if (other.captured) continue;
-    const dx = other.position.x - band.position.x;
-    const dz = other.position.z - band.position.z;
-    const dist = Math.sqrt(dx * dx + dz * dz);
-    if (dist < CONFIG.overlapRadius) captured.push(other);
-  }
-
-  const myGameId = state.gameId;
-
-  if (captured.length > 0) {
-    state.scores[band.owner] += captured.length;
-    state.scores[opponent] -= captured.length;
-    updateUI();
-    pulseScore(band.owner);
-
-    beep(880, 0.07, 'sine', 0.09);
-    setTimeout(() => beep(1320, 0.12, 'sine', 0.07), 70);
-    setTimeout(() => beep(1760, 0.1, 'sine', 0.05), 150);
-    vibrate([30, 40, 30]);
-
-    triggerShake(0.35);
-
-    const colorHex = band.owner === 1 ? COLORS.p1Hex : COLORS.p2Hex;
-    showFloatingText(`+${captured.length}`, band.position.clone(), colorHex);
-
-    for (const c of captured) {
-      c.captured = true;
-      c.captureT = 0;
-    }
-
-    setTimeout(() => {
-      if (state.gameId !== myGameId) return;
-      for (const c of captured) {
-        c.dispose();
-        const idx = state.bands.indexOf(c);
-        if (idx >= 0) state.bands.splice(idx, 1);
-      }
-      endTurn();
-    }, 650);
-  } else {
-    setTimeout(() => {
-      if (state.gameId !== myGameId) return;
-      endTurn();
-    }, 260);
-  }
-}
-
-function endTurn() {
-  if (state.scores[1] <= 0 || state.scores[2] <= 0) {
-    gameOver();
-    return;
-  }
-
-  state.currentPlayer = state.currentPlayer === 1 ? 2 : 1;
-
-  if (state.scores[state.currentPlayer] <= 0) {
-    gameOver();
-    return;
-  }
-
-  state.phase = 'aiming';
-  state.aimYaw = 0;
-  state.aimPower = CONFIG.defaultPower;
-  state.activeBand = null;
-  updateUI();
-
-  beep(440, 0.06, 'sine', 0.04);
-
-  // Trigger AI turn
-  if (state.mode === 'ai' && state.currentPlayer === 2) {
-    state.phase = 'ai-aiming';
-    updateUI();
-    state.aiTimer = setTimeout(startAITurn, 500);
-  }
-}
-
-function startAITurn() {
-  if (state.phase !== 'ai-aiming') return;
-  if (state.currentPlayer !== 2) return;
-
-  const shot = computeAIShot(2);
-  const startYaw = state.aimYaw;
-  const startPower = state.aimPower;
-  const startTime = performance.now();
-  const duration = 900;
-
-  function animate() {
-    if (state.phase !== 'ai-aiming') return;
-    const elapsed = performance.now() - startTime;
-    const t = Math.min(elapsed / duration, 1);
-    const ease = 1 - Math.pow(1 - t, 3);
-    state.aimYaw = lerp(startYaw, shot.yaw, ease);
-    state.aimPower = lerp(startPower, shot.power, ease);
-    updatePowerMeterOnly();
-
-    if (t < 1) {
-      requestAnimationFrame(animate);
+    if (state.roundWins[1] >= CONFIG.roundsToWin || state.roundWins[2] >= CONFIG.roundsToWin) {
+      endMatch();
     } else {
-      state.aiTimer = setTimeout(() => {
-        if (state.phase === 'ai-aiming') shoot();
-      }, 220);
+      startRound();
     }
-  }
-  requestAnimationFrame(animate);
+  }, 1600);
 }
 
-function updatePowerMeterOnly() {
-  const pct = (state.aimPower - CONFIG.minPower) / (CONFIG.maxPower - CONFIG.minPower);
-  powerFill.style.width = (pct * 100) + '%';
-  powerValue.textContent = Math.round(pct * 100) + '%';
-}
-
-function gameOver() {
+function endMatch() {
   state.phase = 'gameover';
-  state.activeBand = null;
-  clearTimeout(state.aiTimer);
 
-  const s1 = state.scores[1];
-  const s2 = state.scores[2];
+  const w1 = state.roundWins[1];
+  const w2 = state.roundWins[2];
+  let winner = w1 > w2 ? 1 : w2 > w1 ? 2 : 0;
 
-  let winner = 0;
-  if (s1 > s2) winner = 1;
-  else if (s2 > s1) winner = 2;
-
-  finalP1.textContent = s1;
-  finalP2.textContent = s2;
+  finalP1.textContent = w1;
+  finalP2.textContent = w2;
 
   winnerText.classList.remove('p1', 'p2');
-  if (winner === 1) {
-    winnerText.textContent = 'PLAYER 1 WINS!';
-    winnerText.classList.add('p1');
-    chord([523, 659, 784, 1047], 0.4, 0.06);
-  } else if (winner === 2) {
-    winnerText.textContent = state.mode === 'ai' ? 'AI WINS!' : 'PLAYER 2 WINS!';
-    winnerText.classList.add('p2');
-    chord([523, 659, 784, 1047], 0.4, 0.06);
-  } else {
-    winnerText.textContent = 'DRAW!';
-    chord([440, 440], 0.3, 0.05);
-  }
 
-  vibrate(winner === 1 ? [40, 60, 40, 60, 80] : [200]);
+  if (winner === 0) {
+    winnerText.textContent = 'DRAW!';
+    winReason.textContent = 'TIED MATCH';
+    chord([440, 440], 0.3, 0.05);
+  } else {
+    const p1Name = state.mode === 'ai' ? 'YOU WIN!' : 'PLAYER 1 WINS!';
+    const p2Name = state.mode === 'ai' ? 'AI WINS!' : 'PLAYER 2 WINS!';
+    winnerText.textContent = winner === 1 ? p1Name : p2Name;
+    winnerText.classList.add(winner === 1 ? 'p1' : 'p2');
+    winReason.textContent = `${state.roundWins[winner]} ROUNDS WON`;
+    chord([523, 659, 784, 1047], 0.45, 0.07);
+    vibrate(winner === 1 ? [40, 60, 40, 60, 100] : [200]);
+  }
 
   updateUI();
   showScreen('gameover');
 }
 
-/* ============================================================
-   INPUT
-   ============================================================ */
-const keys = {};
-
-window.addEventListener('keydown', (e) => {
-  keys[e.code] = true;
-
-  if (e.code === 'Space') {
-    e.preventDefault();
-    if (state.phase === 'aiming') shoot();
-  }
-  if (e.code === 'Escape') {
-    if (state.phase !== 'menu' && state.phase !== 'gameover') {
-      state.gameId++;
-      clearTimeout(state.aiTimer);
-      state.phase = 'menu';
-      showScreen('menu');
-      for (const b of state.bands) b.dispose();
-      state.bands = [];
-    }
-  }
-  if (e.code === 'KeyR' && state.phase === 'gameover') {
-    startGame(state.mode);
-  }
-});
-
-window.addEventListener('keyup', (e) => { keys[e.code] = false; });
-
-/* Pointer / Touch aiming */
-let pointerActive = false;
-let pointerStart = { x: 0, y: 0 };
-let pointerCur = { x: 0, y: 0 };
-let pointerId = null;
-const DRAG_THRESHOLD = 22;
-
-function onPointerDown(e) {
-  if (state.phase !== 'aiming') return;
-  // Ignore if started on shoot button
-  if (e.target === shootBtn) return;
-
-  initAudio();
-  pointerActive = true;
-  pointerId = e.pointerId;
-  pointerStart.x = e.clientX;
-  pointerStart.y = e.clientY;
-  pointerCur.x = e.clientX;
-  pointerCur.y = e.clientY;
-
-  try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+function goToMenu() {
+  state.gameId++;
+  clearTimeout(state.aiTimer);
+  state.phase = 'menu';
+  joyP1.hide(); joyP2.hide();
+  activeTouches.clear();
+  countdownEl.classList.add('hidden');
+  showScreen('menu');
 }
-
-function onPointerMove(e) {
-  if (!pointerActive || e.pointerId !== pointerId) return;
-  e.preventDefault();
-  pointerCur.x = e.clientX;
-  pointerCur.y = e.clientY;
-  applyPointerAim();
-}
-
-function onPointerUp(e) {
-  if (!pointerActive || e.pointerId !== pointerId) return;
-  pointerActive = false;
-  pointerId = null;
-
-  const dx = pointerCur.x - pointerStart.x;
-  const dy = pointerCur.y - pointerStart.y;
-  const dist = Math.hypot(dx, dy);
-
-  if (dist > DRAG_THRESHOLD && state.phase === 'aiming') {
-    shoot();
-  }
-}
-
-canvas.addEventListener('pointerdown', onPointerDown);
-canvas.addEventListener('pointermove', onPointerMove, { passive: false });
-canvas.addEventListener('pointerup', onPointerUp);
-canvas.addEventListener('pointercancel', () => {
-  pointerActive = false;
-  pointerId = null;
-});
-
-canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-
-function applyPointerAim() {
-  const dx = pointerCur.x - pointerStart.x;
-  const dy = pointerCur.y - pointerStart.y;
-
-  const yawSensitivity = 0.006;
-  state.aimYaw = clamp(dx * yawSensitivity, -CONFIG.maxYaw, CONFIG.maxYaw);
-
-  const powerRange = CONFIG.maxPower - CONFIG.minPower;
-  const powerSensitivity = 0.0055;
-  state.aimPower = clamp(
-    CONFIG.defaultPower + (-dy) * powerSensitivity * powerRange,
-    CONFIG.minPower,
-    CONFIG.maxPower
-  );
-
-  updatePowerMeterOnly();
-}
-
-/* Shoot button */
-shootBtn.addEventListener('click', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  if (state.phase === 'aiming') shoot();
-});
 
 /* ============================================================
-   UPDATE LOOP
+   UPDATE
    ============================================================ */
-function updateAim(dt) {
-  if (state.phase !== 'aiming') return;
-
-  const rotateSpeed = 1.7;
-  const powerSpeed = 8;
-
-  if (keys['ArrowLeft'] || keys['KeyA']) {
-    state.aimYaw = clamp(state.aimYaw - rotateSpeed * dt, -CONFIG.maxYaw, CONFIG.maxYaw);
-  }
-  if (keys['ArrowRight'] || keys['KeyD']) {
-    state.aimYaw = clamp(state.aimYaw + rotateSpeed * dt, -CONFIG.maxYaw, CONFIG.maxYaw);
-  }
-  if (keys['ArrowUp'] || keys['KeyW']) {
-    state.aimPower = clamp(state.aimPower + powerSpeed * dt, CONFIG.minPower, CONFIG.maxPower);
-  }
-  if (keys['ArrowDown'] || keys['KeyS']) {
-    state.aimPower = clamp(state.aimPower - powerSpeed * dt, CONFIG.minPower, CONFIG.maxPower);
-  }
-
-  updatePowerMeterOnly();
-}
-
-function updateTrajectory() {
-  if (state.phase !== 'aiming' && state.phase !== 'ai-aiming') {
-    trajGeo.setDrawRange(0, 0);
-    landMarker.visible = false;
-    return;
-  }
-
-  const pts = computeTrajectory(state.currentPlayer, state.aimYaw, state.aimPower);
-  const count = Math.min(pts.length, MAX_TRAJ);
-  for (let i = 0; i < count; i++) {
-    trajPositions[i * 3] = pts[i].x;
-    trajPositions[i * 3 + 1] = pts[i].y;
-    trajPositions[i * 3 + 2] = pts[i].z;
-  }
-  trajGeo.attributes.position.needsUpdate = true;
-  trajGeo.setDrawRange(0, count);
-
-  // Color by player
-  trajPoints.material.color.setHex(state.currentPlayer === 1 ? COLORS.p1 : COLORS.p2);
-
-  if (pts.length > 0) {
-    const last = pts[pts.length - 1];
-    landMarker.position.set(last.x, 0.018, last.z);
-    landMarker.visible = true;
-    landMarker.material.color.setHex(state.currentPlayer === 1 ? COLORS.p1 : COLORS.p2);
-    const pulse = 1 + Math.sin(state.time * 5) * 0.08;
-    landMarker.scale.setScalar(pulse);
-  }
-}
-
-function updatePads(dt) {
-  const activePad = state.currentPlayer === 1 ? pad1 : pad2;
-  const inactivePad = state.currentPlayer === 1 ? pad2 : pad1;
-
-  activePad.userData.ring.rotation.z += dt * 0.8;
-
-  const aimingPhase = state.phase === 'aiming' || state.phase === 'ai-aiming';
-  const pulse = 0.5 + Math.sin(state.time * 3) * 0.15;
-  activePad.userData.ringMat.opacity = aimingPhase ? pulse : 0.3;
-  activePad.userData.innerMat.opacity = aimingPhase ? 0.12 : 0.05;
-  inactivePad.userData.ringMat.opacity = 0.2;
-  inactivePad.userData.innerMat.opacity = 0.04;
-}
-
 function update(dt) {
   state.time += dt;
 
-  updateAim(dt);
-  updateTrajectory();
-  updatePads(dt);
+  // Countdown
+  if (state.phase === 'countdown') {
+    const prev = Math.ceil(state.countdown);
+    state.countdown -= dt;
+    const curr = Math.ceil(state.countdown);
 
-  if (state.activeBand) {
-    state.activeBand.update(dt);
-    if (state.phase === 'flying' && state.activeBand.settled) {
-      onBandSettled(state.activeBand);
+    if (state.countdown <= 0) {
+      countdownNum.textContent = 'GO!';
+      countdownNum.classList.add('go');
+      beginPlaying();
+      setTimeout(() => {
+        if (state.phase !== 'menu') countdownEl.classList.add('hidden');
+      }, 600);
+    } else if (curr !== prev) {
+      countdownNum.textContent = String(curr);
+      countdownNum.classList.remove('go');
+      // Retrigger animation
+      countdownNum.style.animation = 'none';
+      void countdownNum.offsetWidth;
+      countdownNum.style.animation = '';
+      beep(660, 0.08, 'sine', 0.05);
     }
+
+    // Freeze bands during countdown
+    bands[0].update(dt, 0, 0);
+    bands[1].update(dt, 0, 0);
+  }
+  else if (state.phase === 'playing') {
+    // Player 1
+    const in1 = getPlayerInput(1);
+    bands[0].update(dt, in1.x * CONFIG.playerSpeed, in1.y * CONFIG.playerSpeed);
+
+    // Player 2
+    if (state.mode === 'ai') {
+      const aiIn = getAIInput();
+      bands[1].update(dt, aiIn.x * CONFIG.aiSpeed, aiIn.y * CONFIG.aiSpeed);
+    } else {
+      const in2 = getPlayerInput(2);
+      bands[1].update(dt, in2.x * CONFIG.playerSpeed, in2.y * CONFIG.playerSpeed);
+    }
+
+    // Overlap check
+    const winner = checkOverlap();
+    if (winner !== 0) endRound(winner);
+  }
+  else if (state.phase === 'celebrating') {
+    // Bands are frozen but shadows still update
+    bands[0].update(dt, 0, 0);
+    bands[1].update(dt, 0, 0);
   }
 
-  for (const b of state.bands) {
-    if (b !== state.activeBand) b.update(dt);
-  }
+  // Update danger rings
+  dangerRing1.position.x = bands[0].pos.x;
+  dangerRing1.position.z = bands[0].pos.z;
+  dangerRing2.position.x = bands[1].pos.x;
+  dangerRing2.position.z = bands[1].pos.z;
+
+  // Distance-based glow (danger proximity)
+  const dist = Math.hypot(
+    bands[0].pos.x - bands[1].pos.x,
+    bands[0].pos.z - bands[1].pos.z
+  );
+  const danger = clamp(1 - (dist - CONFIG.overlapRadius) / 4, 0, 1);
+  const basePulse = 0.3 + Math.sin(state.time * 4) * 0.08;
+  dangerRing1.material.opacity = basePulse + danger * 0.4;
+  dangerRing2.material.opacity = basePulse + danger * 0.4;
+
+  // Subtle band emissive when close
+  bandMatP1.emissiveIntensity = 1 + danger * 1.5;
+  bandMatP2.emissiveIntensity = 1 + danger * 1.5;
 
   // Camera shake
+  const baseY = 24, baseZ = 6;
   if (state.shake > 0.001) {
-    const baseX = 0;
-    const baseY = getCameraBaseY();
-    const baseZ = getCameraBaseZ();
     camera.position.set(
-      baseX + (Math.random() - 0.5) * state.shake,
+      (Math.random() - 0.5) * state.shake,
       baseY + (Math.random() - 0.5) * state.shake,
       baseZ + (Math.random() - 0.5) * state.shake
     );
@@ -1679,78 +1284,61 @@ function update(dt) {
     state.shake *= 0.88;
   } else {
     camera.position.x = lerp(camera.position.x, 0, 0.15);
-    camera.position.y = lerp(camera.position.y, getCameraBaseY(), 0.15);
-    camera.position.z = lerp(camera.position.z, getCameraBaseZ(), 0.15);
+    camera.position.y = lerp(camera.position.y, baseY, 0.15);
+    camera.position.z = lerp(camera.position.z, baseZ, 0.15);
     camera.lookAt(CONFIG.camLook);
   }
 }
 
-function getCameraBaseY() { return 20; }
-function getCameraBaseZ() { return 15; }
-
 /* ============================================================
-   RESIZE — adapt FOV for any aspect ratio
+   RESIZE
    ============================================================ */
 function onResize() {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
+  const w = window.innerWidth, h = window.innerHeight;
   const aspect = w / h;
-
   camera.aspect = aspect;
 
-  // Compute FOV needed to fit the field
-  const camPos = new THREE.Vector3(0, getCameraBaseY(), getCameraBaseZ());
+  // Fit the circular arena in the viewport
+  const camPos = new THREE.Vector3(0, 24, 6);
   const camDir = CONFIG.camLook.clone().sub(camPos).normalize();
   const worldUp = new THREE.Vector3(0, 1, 0);
   const right = new THREE.Vector3().crossVectors(camDir, worldUp).normalize();
   const up = new THREE.Vector3().crossVectors(right, camDir).normalize();
 
-  const corners = [
-    new THREE.Vector3(10.5, 0, 10.5),
-    new THREE.Vector3(-10.5, 0, 10.5),
-    new THREE.Vector3(10.5, 0, -10.5),
-    new THREE.Vector3(-10.5, 0, -10.5),
-  ];
-
+  // Sample circle boundary
+  const samples = 20;
+  const rad = CONFIG.fieldRadius + 1.0;  // some padding
   let maxTanH = 0, maxTanV = 0;
-  for (const c of corners) {
-    const v = c.clone().sub(camPos);
+  for (let i = 0; i < samples; i++) {
+    const a = (i / samples) * Math.PI * 2;
+    const p = new THREE.Vector3(Math.cos(a) * rad, 0, Math.sin(a) * rad);
+    const v = p.clone().sub(camPos);
     const dist = v.dot(camDir);
-    const hComp = Math.abs(v.dot(right));
-    const vComp = Math.abs(v.dot(up));
-    if (dist > 0.1) {
-      maxTanH = Math.max(maxTanH, hComp / dist);
-      maxTanV = Math.max(maxTanV, vComp / dist);
-    }
+    if (dist <= 0.1) continue;
+    maxTanH = Math.max(maxTanH, Math.abs(v.dot(right)) / dist);
+    maxTanV = Math.max(maxTanV, Math.abs(v.dot(up)) / dist);
   }
 
-  // Margin for HUD
-  maxTanH *= 1.12;
-  maxTanV *= 1.18;
+  maxTanH *= 1.15;
+  maxTanV *= 1.22;
 
-  const tanHalfH = maxTanH;
-  const tanHalfV = Math.max(maxTanV, tanHalfH / aspect);
+  const tanHalfV = Math.max(maxTanV, maxTanH / aspect);
   let fov = 2 * Math.atan(tanHalfV) * 180 / Math.PI;
-  fov = clamp(fov, 45, 92);
+  fov = clamp(fov, 45, 95);
 
   camera.fov = fov;
   camera.updateProjectionMatrix();
-
   renderer.setSize(w, h);
   renderer.setPixelRatio(isLowEnd ? 1 : Math.min(window.devicePixelRatio, 1.75));
 }
-
 window.addEventListener('resize', onResize);
 window.addEventListener('orientationchange', () => setTimeout(onResize, 150));
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', onResize);
-}
+if (window.visualViewport) window.visualViewport.addEventListener('resize', onResize);
 
 /* ============================================================
-   RENDER LOOP
+   LOOP
    ============================================================ */
 const clock = new THREE.Clock();
-
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.05);
   update(dt);
@@ -1758,23 +1346,15 @@ renderer.setAnimationLoop(() => {
 });
 
 /* ============================================================
-   BUTTON HANDLERS
+   BUTTONS
    ============================================================ */
-document.getElementById('start-ai-btn').addEventListener('click', () => startGame('ai'));
-document.getElementById('start-local-btn').addEventListener('click', () => startGame('local'));
+document.getElementById('start-ai-btn').addEventListener('click', () => startMatch('ai'));
+document.getElementById('start-local-btn').addEventListener('click', () => startMatch('local'));
 document.getElementById('howto-btn').addEventListener('click', () => showScreen('howto'));
 document.getElementById('howto-back').addEventListener('click', () => showScreen('menu'));
-document.getElementById('replay-btn').addEventListener('click', () => startGame(state.mode));
-document.getElementById('menu-btn').addEventListener('click', () => {
-  state.gameId++;
-  clearTimeout(state.aiTimer);
-  state.phase = 'menu';
-  for (const b of state.bands) b.dispose();
-  state.bands = [];
-  showScreen('menu');
-});
+document.getElementById('replay-btn').addEventListener('click', () => startMatch(state.mode));
+document.getElementById('menu-btn').addEventListener('click', goToMenu);
 
-/* Prevent context menu / long-press selection */
 document.addEventListener('contextmenu', (e) => {
   if (e.target.tagName !== 'BUTTON') e.preventDefault();
 });
@@ -1794,14 +1374,11 @@ setTimeout(() => {
 }, 350);
 
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    if (audioCtx) audioCtx.suspend();
-  } else {
-    if (audioCtx) audioCtx.resume();
-  }
+  if (document.hidden) { if (audioCtx) audioCtx.suspend(); }
+  else { if (audioCtx) audioCtx.resume(); }
 });
 
-console.log('%c DOBO ', 'background:#00d9ff;color:#000;font-weight:bold;padding:2px 6px;border-radius:3px;', 'Mobile-ready · AI opponent · Three.js');
+console.log('%c DOBO ', 'background:#00d9ff;color:#000;font-weight:bold;padding:2px 6px;border-radius:3px;', 'Chase · Overlap · Win');
 </script>
 </body>
 </html>
