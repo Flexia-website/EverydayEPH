@@ -1,0 +1,1807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a15">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>DOBO — Rubber Band Game</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    position: fixed;
+    inset: 0;
+    background: #0a0a15;
+    color: #e8e8f0;
+    font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: none;
+    overscroll-behavior: none;
+  }
+
+  :root {
+    --p1: #00d9ff;
+    --p1-glow: rgba(0, 217, 255, 0.5);
+    --p2: #ff6b35;
+    --p2-glow: rgba(255, 107, 53, 0.5);
+    --panel: rgba(16, 16, 28, 0.9);
+    --panel-solid: rgba(16, 16, 28, 0.98);
+    --border: rgba(255, 255, 255, 0.08);
+    --border-bright: rgba(255, 255, 255, 0.18);
+    --text-dim: rgba(232, 232, 240, 0.5);
+    --gold: #ffc857;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  #app { position: relative; width: 100%; height: 100%; overflow: hidden; }
+
+  #game-canvas {
+    display: block;
+    width: 100%; height: 100%;
+    position: absolute;
+    inset: 0;
+    touch-action: none;
+  }
+
+  #vignette {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.5) 100%);
+    z-index: 5;
+  }
+
+  #fx-layer {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 20;
+  }
+  .float-text {
+    position: absolute;
+    font-size: 28px;
+    font-weight: 800;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.95);
+    transform: translate(-50%, -50%);
+    animation: floatUp 1.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+  }
+  @keyframes floatUp {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+    20%  { opacity: 1; transform: translate(-50%, -70%) scale(1.3); }
+    60%  { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -190%) scale(0.85); }
+  }
+
+  /* ===== HUD ===== */
+  #hud {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: calc(14px + var(--safe-top)) 14px calc(14px + var(--safe-bottom));
+    z-index: 10;
+    transition: opacity 0.4s ease;
+  }
+  #hud.hidden { opacity: 0; pointer-events: none; }
+
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .player-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 10px 14px;
+    min-width: 84px;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .player-card.p1 { border-left: 3px solid rgba(0,217,255,0.3); }
+  .player-card.p2 { border-right: 3px solid rgba(255,107,53,0.3); text-align: right; }
+
+  .player-card.active {
+    background: var(--panel-solid);
+    border-color: var(--border-bright);
+  }
+  .player-card.p1.active {
+    box-shadow: 0 0 24px rgba(0, 217, 255, 0.3), inset 0 0 20px rgba(0, 217, 255, 0.06);
+  }
+  .player-card.p2.active {
+    box-shadow: 0 0 24px rgba(255, 107, 53, 0.3), inset 0 0 20px rgba(255, 107, 53, 0.06);
+  }
+
+  .player-name {
+    font-size: 9.5px;
+    letter-spacing: 1.8px;
+    font-weight: 700;
+    opacity: 0.55;
+    margin-bottom: 3px;
+  }
+  .player-card.p1 .player-name { color: var(--p1); }
+  .player-card.p2 .player-name { color: var(--p2); }
+
+  .player-score {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    transition: color 0.3s;
+  }
+  .player-card.p1 .player-score { color: var(--p1); }
+  .player-card.p2 .player-score { color: var(--p2); }
+
+  .player-score.pop { animation: scorePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  @keyframes scorePop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.5); filter: brightness(2.2); }
+    100% { transform: scale(1); }
+  }
+
+  .turn-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .turn-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--p1);
+    box-shadow: 0 0 12px var(--p1), 0 0 4px var(--p1);
+    animation: dotPulse 1.6s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  .turn-indicator.p2 .turn-dot {
+    background: var(--p2);
+    box-shadow: 0 0 12px var(--p2), 0 0 4px var(--p2);
+  }
+  .turn-indicator.p1 { color: var(--p1); }
+  .turn-indicator.p2 { color: var(--p2); }
+  .turn-indicator.thinking .turn-dot {
+    animation: dotPulse 0.5s ease-in-out infinite;
+    background: var(--gold);
+    box-shadow: 0 0 12px var(--gold);
+  }
+  .turn-indicator.thinking { color: var(--gold); }
+
+  @keyframes dotPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 0.6; }
+  }
+
+  /* ===== BOTTOM ===== */
+  .bottom-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .power-meter {
+    width: 100%;
+    max-width: 340px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 10px 16px 12px;
+    transition: opacity 0.35s;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .power-meter.hidden { opacity: 0.2; pointer-events: none; }
+
+  .power-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 7px;
+  }
+  .power-label {
+    font-size: 9px;
+    letter-spacing: 2.2px;
+    font-weight: 800;
+    opacity: 0.55;
+  }
+  .power-value {
+    font-size: 11px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.85;
+  }
+
+  .power-track {
+    height: 10px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);
+  }
+  .power-fill {
+    height: 100%;
+    width: 50%;
+    background: linear-gradient(90deg, #00e08a 0%, #ffd93d 45%, #ff5c5c 100%);
+    border-radius: 5px;
+    transition: width 0.06s linear;
+    box-shadow: 0 0 14px rgba(255, 217, 61, 0.35);
+  }
+
+  .controls-hint {
+    font-size: 10.5px;
+    letter-spacing: 0.8px;
+    opacity: 0.5;
+    background: rgba(16, 16, 28, 0.75);
+    border: 1px solid var(--border);
+    padding: 7px 16px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-align: center;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .controls-hint .mobile-only { display: none; }
+
+  /* ===== OVERLAYS ===== */
+  .overlay {
+    position: absolute; inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at center, rgba(10,10,25,0.78) 0%, rgba(5,5,15,0.97) 100%);
+    z-index: 50;
+    opacity: 1;
+    transition: opacity 0.4s ease;
+    padding: calc(20px + var(--safe-top)) 20px calc(20px + var(--safe-bottom));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .overlay.hidden { opacity: 0; pointer-events: none; }
+
+  .menu-content {
+    max-width: 440px;
+    width: 100%;
+    text-align: center;
+    animation: menuIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    margin: auto;
+  }
+  @keyframes menuIn {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .game-title {
+    font-size: clamp(48px, 15vw, 84px);
+    font-weight: 900;
+    letter-spacing: 6px;
+    line-height: 0.95;
+    margin-bottom: 6px;
+    background: linear-gradient(135deg, var(--p1) 0%, #a78bfa 45%, var(--p2) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 4px 24px rgba(120, 80, 255, 0.35));
+    animation: titleGlow 4s ease-in-out infinite;
+  }
+  @keyframes titleGlow {
+    0%, 100% { filter: drop-shadow(0 4px 24px rgba(120, 80, 255, 0.35)); }
+    50%      { filter: drop-shadow(0 4px 32px rgba(0, 217, 255, 0.5)); }
+  }
+
+  .subtitle {
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--text-dim);
+    margin-bottom: 36px;
+  }
+
+  .menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    align-items: center;
+  }
+
+  .btn {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 16px 40px;
+    border-radius: 14px;
+    border: 1px solid var(--border-bright);
+    background: var(--panel);
+    color: #e8e8f0;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    min-width: 240px;
+    position: relative;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .btn:hover, .btn:focus {
+    transform: translateY(-2px);
+    border-color: rgba(255,255,255,0.4);
+    background: rgba(30, 30, 50, 0.98);
+    outline: none;
+  }
+  .btn:active { transform: translateY(0) scale(0.97); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, rgba(0,217,255,0.2) 0%, rgba(255,107,53,0.2) 100%);
+    border-color: rgba(0, 217, 255, 0.45);
+    box-shadow: 0 0 34px rgba(0, 217, 255, 0.18), inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+  .btn-primary:hover {
+    box-shadow: 0 0 48px rgba(0, 217, 255, 0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+    border-color: rgba(0, 217, 255, 0.8);
+  }
+
+  .btn-small {
+    font-size: 12px;
+    padding: 12px 28px;
+    min-width: 200px;
+    letter-spacing: 1.5px;
+  }
+
+  /* Rules */
+  .rules {
+    text-align: left;
+    list-style: none;
+    margin: 0 0 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+  }
+  .rules li {
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: rgba(232, 232, 240, 0.85);
+    padding-left: 26px;
+    position: relative;
+    font-weight: 500;
+  }
+  .rules li::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 7px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--p1);
+    box-shadow: 0 0 10px var(--p1-glow);
+  }
+  .rules li:nth-child(2)::before { background: var(--p2); box-shadow: 0 0 10px var(--p2-glow); }
+  .rules li:nth-child(3)::before { background: var(--gold); box-shadow: 0 0 10px rgba(255,200,87,0.5); }
+  .rules li:nth-child(4)::before { background: #a78bfa; box-shadow: 0 0 10px rgba(167,139,250,0.5); }
+  .rules li:nth-child(5)::before { background: #00e08a; box-shadow: 0 0 10px rgba(0,224,138,0.5); }
+
+  .overlay h2 {
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    margin-bottom: 24px;
+    text-transform: uppercase;
+  }
+
+  #winner-text {
+    font-size: clamp(28px, 8vw, 42px);
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--gold), #fff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  #winner-text.p1 {
+    background: linear-gradient(135deg, var(--p1), #a78bfa);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  #winner-text.p2 {
+    background: linear-gradient(135deg, var(--p2), var(--gold));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .final-scores {
+    display: flex;
+    justify-content: center;
+    gap: 44px;
+    margin: 20px 0 32px;
+  }
+  .final-score {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .final-score .label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    font-weight: 700;
+    opacity: 0.55;
+  }
+  .final-score .value {
+    font-size: 46px;
+    font-weight: 900;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .final-score.p1 .value { color: var(--p1); }
+  .final-score.p2 .value { color: var(--p2); }
+
+  /* ===== SHOOT BUTTON (mobile) ===== */
+  #shoot-btn {
+    position: absolute;
+    right: 16px;
+    bottom: calc(80px + var(--safe-bottom));
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(0,217,255,0.25), rgba(255,107,53,0.25));
+    border: 2px solid rgba(0, 217, 255, 0.5);
+    color: #fff;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    z-index: 15;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    text-transform: uppercase;
+    box-shadow: 0 4px 24px rgba(0, 217, 255, 0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+    transition: transform 0.15s, box-shadow 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    pointer-events: auto;
+    touch-action: manipulation;
+  }
+  #shoot-btn:active {
+    transform: scale(0.92);
+    box-shadow: 0 2px 12px rgba(0, 217, 255, 0.5);
+  }
+  #shoot-btn.visible { display: flex; }
+  #shoot-btn.p2 {
+    background: linear-gradient(135deg, rgba(255,107,53,0.25), rgba(255,200,87,0.25));
+    border-color: rgba(255, 107, 53, 0.5);
+    box-shadow: 0 4px 24px rgba(255, 107, 53, 0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+
+  /* Loading */
+  #loading {
+    position: absolute; inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a0a15;
+    z-index: 100;
+    transition: opacity 0.5s;
+  }
+  #loading.hidden { opacity: 0; pointer-events: none; }
+  .spinner {
+    width: 38px; height: 38px;
+    border: 3px solid rgba(255,255,255,0.08);
+    border-top-color: var(--p1);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Mobile tweaks */
+  @media (max-width: 600px) {
+    #hud { padding: calc(10px + var(--safe-top)) 10px calc(10px + var(--safe-bottom)); }
+    .player-card { padding: 8px 12px; min-width: 74px; border-radius: 12px; }
+    .player-score { font-size: 22px; }
+    .player-name { font-size: 8.5px; }
+    .turn-indicator { padding: 7px 11px; font-size: 9.5px; gap: 6px; }
+    .turn-dot { width: 7px; height: 7px; }
+    .power-meter { max-width: 100%; padding: 9px 13px 11px; }
+    .controls-hint { font-size: 9.5px; padding: 6px 12px; }
+    .controls-hint .desktop-only { display: none; }
+    .controls-hint .mobile-only { display: inline; }
+    .btn { padding: 15px 30px; font-size: 13px; min-width: 210px; }
+    .btn-small { padding: 11px 24px; font-size: 11px; min-width: 180px; }
+    .final-scores { gap: 32px; }
+    .final-score .value { font-size: 40px; }
+    .menu-buttons { gap: 10px; }
+  }
+
+  @media (max-height: 560px) {
+    .game-title { font-size: 42px; margin-bottom: 2px; }
+    .subtitle { margin-bottom: 18px; font-size: 10px; letter-spacing: 3px; }
+    .btn { padding: 12px 26px; font-size: 12px; }
+    .rules { gap: 8px; margin-bottom: 18px; }
+    .rules li { font-size: 12px; }
+    .overlay h2 { font-size: 20px; margin-bottom: 16px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="game-canvas"></canvas>
+  <div id="vignette"></div>
+  <div id="fx-layer"></div>
+
+  <button id="shoot-btn" aria-label="Shoot">SHOOT</button>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div class="top-bar">
+      <div class="player-card p1" id="card-p1">
+        <div class="player-name" id="name-p1">PLAYER 1</div>
+        <div class="player-score" id="score-p1">5</div>
+      </div>
+      <div class="turn-indicator p1" id="turn-indicator">
+        <div class="turn-dot"></div>
+        <span id="turn-text">YOUR TURN</span>
+      </div>
+      <div class="player-card p2" id="card-p2">
+        <div class="player-name" id="name-p2">PLAYER 2</div>
+        <div class="player-score" id="score-p2">5</div>
+      </div>
+    </div>
+
+    <div class="bottom-bar">
+      <div class="power-meter" id="power-meter">
+        <div class="power-label-row">
+          <span class="power-label">POWER</span>
+          <span class="power-value" id="power-value">50%</span>
+        </div>
+        <div class="power-track">
+          <div class="power-fill" id="power-fill"></div>
+        </div>
+      </div>
+      <div class="controls-hint">
+        <span class="desktop-only">↑↓ POWER · ←→ AIM · SPACE SHOOT</span>
+        <span class="mobile-only">DRAG TO AIM · RELEASE TO SHOOT</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Menu -->
+  <div id="menu" class="overlay">
+    <div class="menu-content">
+      <h1 class="game-title">DOBO</h1>
+      <p class="subtitle">Nigerian Rubber Band Game</p>
+      <div class="menu-buttons">
+        <button class="btn btn-primary" id="start-ai-btn">PLAY VS AI</button>
+        <button class="btn" id="start-local-btn">2 PLAYERS</button>
+        <button class="btn btn-small" id="howto-btn">HOW TO PLAY</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- How to Play -->
+  <div id="howto" class="overlay hidden">
+    <div class="menu-content">
+      <h2>HOW TO PLAY</h2>
+      <ul class="rules">
+        <li>Each player starts with <strong>5 rubber bands</strong>.</li>
+        <li>Take turns shooting one band onto the field.</li>
+        <li>If your band lands <strong>overlapping</strong> an opponent's band, you capture it!</li>
+        <li>Captured bands are added to your inventory.</li>
+        <li>Run out of bands on your turn and you <strong>lose</strong>.</li>
+      </ul>
+      <button class="btn btn-small" id="howto-back">BACK</button>
+    </div>
+  </div>
+
+  <!-- Game Over -->
+  <div id="gameover" class="overlay hidden">
+    <div class="menu-content">
+      <h2 id="winner-text">PLAYER 1 WINS!</h2>
+      <div class="final-scores">
+        <div class="final-score p1">
+          <span class="label">PLAYER 1</span>
+          <span class="value" id="final-p1">5</span>
+        </div>
+        <div class="final-score p2">
+          <span class="label" id="final-p2-label">PLAYER 2</span>
+          <span class="value" id="final-p2">0</span>
+        </div>
+      </div>
+      <div class="menu-buttons">
+        <button class="btn btn-primary" id="replay-btn">PLAY AGAIN</button>
+        <button class="btn btn-small" id="menu-btn">MAIN MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading">
+    <div class="spinner"></div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const CONFIG = {
+  launchZ: 9,
+  launchY: 0.55,
+  bandRadius: 0.5,
+  bandTube: 0.11,
+  overlapRadius: 1.35,
+  gravity: -22,
+  elevation: Math.PI / 6,
+  minPower: 6,
+  maxPower: 18,
+  maxYaw: 40 * Math.PI / 180,
+  startingBands: 5,
+  defaultPower: 12,
+  camLook: new THREE.Vector3(0, 0, 0),
+};
+
+const COLORS = {
+  p1: 0x00d9ff,
+  p2: 0xff6b35,
+  p1Hex: '#00d9ff',
+  p2Hex: '#ff6b35',
+};
+
+/* ============================================================
+   DEVICE DETECTION
+   ============================================================ */
+const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+const isLowEnd =
+  (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
+  (navigator.deviceMemory && navigator.deviceMemory <= 3);
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  gameId: 0,
+  phase: 'menu',          // menu | aiming | ai-aiming | flying | resolving | gameover
+  mode: 'ai',             // 'ai' | 'local'
+  currentPlayer: 1,
+  scores: { 1: CONFIG.startingBands, 2: CONFIG.startingBands },
+  aimYaw: 0,
+  aimPower: CONFIG.defaultPower,
+  bands: [],
+  activeBand: null,
+  shake: 0,
+  time: 0,
+  aiTimer: null,
+};
+
+/* ============================================================
+   UTILS
+   ============================================================ */
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+
+function vibrate(pattern) {
+  if (navigator.vibrate && isTouch) {
+    try { navigator.vibrate(pattern); } catch (e) {}
+  }
+}
+
+/* ============================================================
+   AUDIO
+   ============================================================ */
+let audioCtx = null;
+function initAudio() {
+  if (audioCtx) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return;
+  }
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  } catch (e) {}
+}
+function beep(freq, dur, type = 'sine', vol = 0.07) {
+  if (!audioCtx || audioCtx.state !== 'running') return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    g.gain.setValueAtTime(vol, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+    osc.connect(g);
+    g.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + dur);
+  } catch (e) {}
+}
+function chord(freqs, dur, vol = 0.06) {
+  freqs.forEach((f, i) => setTimeout(() => beep(f, dur, 'sine', vol), i * 65));
+}
+
+/* ============================================================
+   THREE SETUP
+   ============================================================ */
+const canvas = document.getElementById('game-canvas');
+
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  antialias: !isLowEnd,
+  powerPreference: 'high-performance',
+  stencil: false,
+});
+renderer.setPixelRatio(isLowEnd ? 1 : Math.min(window.devicePixelRatio, 1.75));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = false;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0d0d1a);
+scene.fog = new THREE.Fog(0x0d0d1a, 26, 55);
+
+const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 140);
+camera.position.set(0, 20, 15);
+camera.lookAt(CONFIG.camLook);
+
+/* ============================================================
+   LIGHTS
+   ============================================================ */
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+scene.add(new THREE.HemisphereLight(0xaaccff, 0x4a3a2a, 0.55));
+const keyLight = new THREE.DirectionalLight(0xfff2d6, 1.0);
+keyLight.position.set(8, 18, 6);
+scene.add(keyLight);
+const rimLight = new THREE.DirectionalLight(0x4a6bff, 0.35);
+rimLight.position.set(-8, 10, -10);
+scene.add(rimLight);
+
+/* ============================================================
+   GROUND
+   ============================================================ */
+function createGroundTexture() {
+  const size = 512;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = size;
+  const ctx = cv.getContext('2d');
+
+  const grad = ctx.createRadialGradient(size/2, size/2, 20, size/2, size/2, size/2);
+  grad.addColorStop(0, '#a08a6e');
+  grad.addColorStop(0.55, '#8a7358');
+  grad.addColorStop(1, '#5e4c3a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+
+  const img = ctx.getImageData(0, 0, size, size);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const n = (Math.random() - 0.5) * 26;
+    d[i] = clamp(d[i] + n, 0, 255);
+    d[i+1] = clamp(d[i+1] + n, 0, 255);
+    d[i+2] = clamp(d[i+2] + n, 0, 255);
+  }
+  ctx.putImageData(img, 0, 0);
+
+  for (let i = 0; i < 450; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    const r = Math.random() * 2.2 + 0.4;
+    ctx.fillStyle = Math.random() < 0.55
+      ? `rgba(30,20,10,${Math.random() * 0.12})`
+      : `rgba(255,240,210,${Math.random() * 0.06})`;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 1;
+  return tex;
+}
+
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(44, 44),
+  new THREE.MeshLambertMaterial({ map: createGroundTexture() })
+);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+/* Field markings */
+const markMat = new THREE.MeshBasicMaterial({
+  color: 0xffffff, transparent: true, opacity: 0.08,
+  side: THREE.DoubleSide, depthWrite: false,
+});
+const centerRing = new THREE.Mesh(new THREE.RingGeometry(2.8, 3.0, 48), markMat);
+centerRing.rotation.x = -Math.PI / 2;
+centerRing.position.y = 0.012;
+scene.add(centerRing);
+
+const lineH = new THREE.Mesh(new THREE.PlaneGeometry(20, 0.06), markMat);
+lineH.rotation.x = -Math.PI / 2;
+lineH.position.y = 0.011;
+scene.add(lineH);
+const lineV = new THREE.Mesh(new THREE.PlaneGeometry(0.06, 20), markMat);
+lineV.rotation.x = -Math.PI / 2;
+lineV.position.y = 0.011;
+scene.add(lineV);
+
+const boundRing = new THREE.Mesh(
+  new THREE.RingGeometry(10, 10.15, 64),
+  new THREE.MeshBasicMaterial({
+    color: 0xffffff, transparent: true, opacity: 0.1,
+    side: THREE.DoubleSide, depthWrite: false,
+  })
+);
+boundRing.rotation.x = -Math.PI / 2;
+boundRing.position.y = 0.013;
+scene.add(boundRing);
+
+/* ============================================================
+   LAUNCH PADS
+   ============================================================ */
+function createLaunchPad(player) {
+  const color = player === 1 ? COLORS.p1 : COLORS.p2;
+  const group = new THREE.Group();
+
+  const ringMat = new THREE.MeshBasicMaterial({
+    color, transparent: true, opacity: 0.55,
+    side: THREE.DoubleSide, depthWrite: false,
+  });
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.05, 40), ringMat);
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.014;
+  group.add(ring);
+
+  const innerMat = new THREE.MeshBasicMaterial({
+    color, transparent: true, opacity: 0.1,
+    side: THREE.DoubleSide, depthWrite: false,
+  });
+  const inner = new THREE.Mesh(new THREE.CircleGeometry(0.85, 32), innerMat);
+  inner.rotation.x = -Math.PI / 2;
+  inner.position.y = 0.013;
+  group.add(inner);
+
+  const z = player === 1 ? CONFIG.launchZ : -CONFIG.launchZ;
+  group.position.set(0, 0, z);
+  group.userData = { ring, ringMat, innerMat };
+  return group;
+}
+
+const pad1 = createLaunchPad(1);
+const pad2 = createLaunchPad(2);
+scene.add(pad1, pad2);
+
+/* Decorative stones */
+const stoneGeo = new THREE.DodecahedronGeometry(0.35, 0);
+const stoneMatA = new THREE.MeshLambertMaterial({ color: 0x5a4d3f });
+const stoneMatB = new THREE.MeshLambertMaterial({ color: 0x3d3428 });
+for (let i = 0; i < 20; i++) {
+  const angle = (i / 20) * Math.PI * 2 + Math.random() * 0.3;
+  const radius = 12.5 + Math.random() * 3.5;
+  const stone = new THREE.Mesh(stoneGeo, Math.random() < 0.5 ? stoneMatA : stoneMatB);
+  stone.position.set(Math.cos(angle) * radius, 0.05 + Math.random() * 0.1, Math.sin(angle) * radius);
+  const s = 0.5 + Math.random() * 0.9;
+  stone.scale.set(s, s * 0.6, s);
+  stone.rotation.set(Math.random(), Math.random() * Math.PI * 2, Math.random());
+  scene.add(stone);
+}
+
+/* ============================================================
+   RUBBER BAND
+   ============================================================ */
+const bandGeo = new THREE.TorusGeometry(CONFIG.bandRadius, CONFIG.bandTube, 8, 20);
+const bandMatP1 = new THREE.MeshLambertMaterial({
+  color: COLORS.p1, emissive: 0x003844, emissiveIntensity: 1,
+});
+const bandMatP2 = new THREE.MeshLambertMaterial({
+  color: COLORS.p2, emissive: 0x3a1400, emissiveIntensity: 1,
+});
+
+// Shadow uses a pooled material for opacity tuning
+const shadowGeo = new THREE.CircleGeometry(1, 16);
+
+class Band {
+  constructor(owner, position, velocity) {
+    this.owner = owner;
+    this.position = position.clone();
+    this.velocity = velocity.clone();
+    this.settled = false;
+    this.captured = false;
+    this.captureT = 0;
+    this.restY = CONFIG.bandTube;
+    this.spin = Math.random() * Math.PI * 2;
+    this.rotSpeed = (Math.random() - 0.5) * 8;
+
+    this.mesh = new THREE.Mesh(bandGeo, owner === 1 ? bandMatP1 : bandMatP2);
+    this.mesh.position.copy(this.position);
+    this.mesh.rotation.x = Math.PI / 2;
+    this.mesh.rotation.z = this.spin;
+    scene.add(this.mesh);
+
+    // Per-band shadow material so opacity can vary without affecting others
+    this.shadowMat = new THREE.MeshBasicMaterial({
+      color: 0x000000, transparent: true, opacity: 0.28, depthWrite: false,
+    });
+    this.shadow = new THREE.Mesh(shadowGeo, this.shadowMat);
+    this.shadow.rotation.x = -Math.PI / 2;
+    this.shadow.position.set(this.position.x, 0.015, this.position.z);
+    this.shadow.scale.setScalar(CONFIG.bandRadius * 0.85);
+    scene.add(this.shadow);
+  }
+
+  update(dt) {
+    if (this.captured) {
+      this.captureT += dt;
+      const t = clamp(this.captureT / 0.5, 0, 1);
+      const s = 1 - t;
+      this.mesh.scale.setScalar(Math.max(0.001, s));
+      this.mesh.position.y = this.position.y + t * 1.6;
+      this.mesh.rotation.z += dt * 22;
+      this.shadowMat.opacity = 0.28 * (1 - t);
+      this.shadow.scale.setScalar(CONFIG.bandRadius * 0.85 * (1 - t));
+      return;
+    }
+    if (this.settled) return;
+
+    this.velocity.y += CONFIG.gravity * dt;
+    this.position.addScaledVector(this.velocity, dt);
+
+    if (this.position.y <= this.restY) {
+      this.position.y = this.restY;
+      if (Math.abs(this.velocity.y) > 1.8) {
+        this.velocity.y = -this.velocity.y * 0.32;
+        this.velocity.x *= 0.7;
+        this.velocity.z *= 0.7;
+        beep(220 + Math.random() * 40, 0.05, 'sine', 0.03);
+      } else {
+        this.velocity.y = 0;
+        this.velocity.x *= 0.85;
+        this.velocity.z *= 0.85;
+        if (Math.abs(this.velocity.x) < 0.15 && Math.abs(this.velocity.z) < 0.15) {
+          this.velocity.set(0, 0, 0);
+          this.settled = true;
+          this.mesh.rotation.z = this.spin;
+        }
+      }
+    }
+
+    this.mesh.position.copy(this.position);
+    this.mesh.rotation.z += this.rotSpeed * dt;
+
+    const hf = clamp(1 - (this.position.y - this.restY) / 4, 0.3, 1);
+    this.shadow.position.set(this.position.x, 0.015, this.position.z);
+    this.shadow.scale.setScalar(CONFIG.bandRadius * 0.85 * hf);
+    this.shadowMat.opacity = 0.28 * hf;
+  }
+
+  dispose() {
+    scene.remove(this.mesh);
+    scene.remove(this.shadow);
+    this.shadowMat.dispose();
+  }
+}
+
+/* ============================================================
+   TRAJECTORY PREVIEW
+   ============================================================ */
+const MAX_TRAJ = 80;
+const trajGeo = new THREE.BufferGeometry();
+const trajPositions = new Float32Array(MAX_TRAJ * 3);
+trajGeo.setAttribute('position', new THREE.BufferAttribute(trajPositions, 3));
+trajGeo.setDrawRange(0, 0);
+
+const trajPoints = new THREE.Points(trajGeo, new THREE.PointsMaterial({
+  color: 0xffffff, size: 0.17, sizeAttenuation: true,
+  transparent: true, opacity: 0.6, depthWrite: false,
+}));
+trajPoints.frustumCulled = false;
+scene.add(trajPoints);
+
+const landMarker = new THREE.Mesh(
+  new THREE.RingGeometry(0.55, 0.72, 28),
+  new THREE.MeshBasicMaterial({
+    color: 0xffffff, transparent: true, opacity: 0.75,
+    side: THREE.DoubleSide, depthWrite: false,
+  })
+);
+landMarker.rotation.x = -Math.PI / 2;
+landMarker.position.y = 0.018;
+landMarker.visible = false;
+scene.add(landMarker);
+
+/* ============================================================
+   PHYSICS HELPERS
+   ============================================================ */
+function getLaunchPos(owner) {
+  const z = owner === 1 ? CONFIG.launchZ : -CONFIG.launchZ;
+  return new THREE.Vector3(0, CONFIG.launchY, z);
+}
+
+function computeVelocity(owner, yaw, power) {
+  const hx = Math.sin(yaw);
+  const hz = Math.cos(yaw) * (owner === 1 ? -1 : 1);
+  const vy = power * Math.sin(CONFIG.elevation);
+  const vh = power * Math.cos(CONFIG.elevation);
+  return new THREE.Vector3(hx * vh, vy, hz * vh);
+}
+
+function computeTrajectory(owner, yaw, power, maxSteps = MAX_TRAJ) {
+  const pos = getLaunchPos(owner);
+  const vel = computeVelocity(owner, yaw, power);
+  const dt = 0.045;
+  const pts = [];
+  for (let i = 0; i < maxSteps; i++) {
+    pts.push(pos.clone());
+    vel.y += CONFIG.gravity * dt;
+    pos.addScaledVector(vel, dt);
+    if (pos.y < 0.05) {
+      pts.push(new THREE.Vector3(pos.x, 0.02, pos.z));
+      break;
+    }
+  }
+  return pts;
+}
+
+/* ============================================================
+   AI LOGIC
+   ============================================================ */
+function computeAIShot(owner) {
+  const opponent = owner === 1 ? 2 : 1;
+  const launch = getLaunchPos(owner);
+
+  // Find opponent bands on the field
+  const targets = state.bands.filter(b => b.owner === opponent && !b.captured && b.settled);
+
+  let targetPos;
+  let aimError = 0;
+
+  if (targets.length > 0) {
+    // Pick the closest one
+    let best = null;
+    let bestDist = Infinity;
+    for (const t of targets) {
+      const d = Math.hypot(t.position.x - launch.x, t.position.z - launch.z);
+      if (d < bestDist) { bestDist = d; best = t; }
+    }
+    targetPos = best.position.clone();
+    aimError = 0.035; // radians of error
+  } else {
+    // No target — aim toward center-ish
+    targetPos = new THREE.Vector3(
+      (Math.random() - 0.5) * 5,
+      0,
+      (Math.random() - 0.5) * 5
+    );
+    aimError = 0.06;
+  }
+
+  // Compute yaw to target
+  const dx = targetPos.x - launch.x;
+  const dz = targetPos.z - launch.z;
+  let yaw;
+  if (owner === 1) {
+    yaw = Math.atan2(dx, -dz);
+  } else {
+    yaw = Math.atan2(dx, dz);
+  }
+
+  // Find best power by simulating
+  let bestPower = CONFIG.defaultPower;
+  let bestErr = Infinity;
+  const steps = 40;
+  const step = (CONFIG.maxPower - CONFIG.minPower) / steps;
+  for (let i = 0; i <= steps; i++) {
+    const p = CONFIG.minPower + i * step;
+    const pts = computeTrajectory(owner, yaw, p, 200);
+    const last = pts[pts.length - 1];
+    const ldx = last.x - targetPos.x;
+    const ldz = last.z - targetPos.z;
+    const err = Math.sqrt(ldx * ldx + ldz * ldz);
+    if (err < bestErr) { bestErr = err; bestPower = p; }
+  }
+
+  // Apply human-like error
+  yaw += (Math.random() - 0.5) * aimError * 2;
+  bestPower += (Math.random() - 0.5) * 1.2;
+  bestPower = clamp(bestPower, CONFIG.minPower, CONFIG.maxPower);
+
+  return { yaw, power: bestPower };
+}
+
+/* ============================================================
+   UI ELEMENTS
+   ============================================================ */
+const hudEl = document.getElementById('hud');
+const cardP1 = document.getElementById('card-p1');
+const cardP2 = document.getElementById('card-p2');
+const nameP1 = document.getElementById('name-p1');
+const nameP2 = document.getElementById('name-p2');
+const scoreP1 = document.getElementById('score-p1');
+const scoreP2 = document.getElementById('score-p2');
+const turnIndicator = document.getElementById('turn-indicator');
+const turnText = document.getElementById('turn-text');
+const powerFill = document.getElementById('power-fill');
+const powerValue = document.getElementById('power-value');
+const powerMeter = document.getElementById('power-meter');
+const menuEl = document.getElementById('menu');
+const howtoEl = document.getElementById('howto');
+const gameoverEl = document.getElementById('gameover');
+const winnerText = document.getElementById('winner-text');
+const finalP1 = document.getElementById('final-p1');
+const finalP2 = document.getElementById('final-p2');
+const finalP2Label = document.getElementById('final-p2-label');
+const fxLayer = document.getElementById('fx-layer');
+const shootBtn = document.getElementById('shoot-btn');
+
+/* ============================================================
+   UI UPDATES
+   ============================================================ */
+function updateUI() {
+  scoreP1.textContent = state.scores[1];
+  scoreP2.textContent = state.scores[2];
+
+  const p = state.currentPlayer;
+  const isAITurn = state.mode === 'ai' && p === 2;
+  const active = state.phase !== 'gameover' && state.phase !== 'menu';
+
+  cardP1.classList.toggle('active', p === 1 && active);
+  cardP2.classList.toggle('active', p === 2 && active);
+
+  turnIndicator.classList.toggle('p1', p === 1);
+  turnIndicator.classList.toggle('p2', p === 2);
+  turnIndicator.classList.toggle('thinking', isAITurn && state.phase === 'ai-aiming');
+
+  if (state.phase === 'gameover') {
+    turnText.textContent = 'GAME OVER';
+  } else if (isAITurn && state.phase === 'ai-aiming') {
+    turnText.textContent = 'AI THINKING';
+  } else if (state.phase === 'resolving') {
+    turnText.textContent = 'CHECKING...';
+  } else {
+    turnText.textContent = state.mode === 'ai' && p === 2 ? 'AI TURN' : `PLAYER ${p}'S TURN`;
+  }
+
+  // Power meter
+  const pct = (state.aimPower - CONFIG.minPower) / (CONFIG.maxPower - CONFIG.minPower);
+  powerFill.style.width = (pct * 100) + '%';
+  powerValue.textContent = Math.round(pct * 100) + '%';
+
+  const accent = p === 1 ? '#00d9ff' : '#ff6b35';
+  powerFill.style.background = `linear-gradient(90deg, #00e08a 0%, #ffd93d 45%, ${accent} 100%)`;
+  powerMeter.classList.toggle('hidden', state.phase !== 'aiming' && state.phase !== 'ai-aiming');
+
+  // Shoot button (mobile only)
+  const showShoot = isTouch && state.phase === 'aiming' && !isAITurn;
+  shootBtn.classList.toggle('visible', showShoot);
+  shootBtn.classList.toggle('p2', p === 2);
+}
+
+function pulseScore(player) {
+  const el = player === 1 ? scoreP1 : scoreP2;
+  el.classList.remove('pop');
+  void el.offsetWidth;
+  el.classList.add('pop');
+}
+
+function showFloatingText(text, worldPos, colorHex) {
+  const v = worldPos.clone();
+  v.y = 1.2;
+  v.project(camera);
+  if (v.z > 1) return;
+  const x = (v.x * 0.5 + 0.5) * window.innerWidth;
+  const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
+
+  const el = document.createElement('div');
+  el.className = 'float-text';
+  el.textContent = text;
+  el.style.color = colorHex;
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  fxLayer.appendChild(el);
+  setTimeout(() => el.remove(), 1300);
+}
+
+function showScreen(screen) {
+  menuEl.classList.toggle('hidden', screen !== 'menu');
+  howtoEl.classList.toggle('hidden', screen !== 'howto');
+  gameoverEl.classList.toggle('hidden', screen !== 'gameover');
+  hudEl.classList.toggle('hidden', screen !== 'game');
+}
+
+function triggerShake(amount) {
+  state.shake = Math.max(state.shake, amount);
+}
+
+/* ============================================================
+   GAME FLOW
+   ============================================================ */
+function startGame(mode) {
+  clearTimeout(state.aiTimer);
+  state.gameId++;
+  state.mode = mode;
+  state.phase = 'aiming';
+  state.currentPlayer = 1;
+  state.scores = { 1: CONFIG.startingBands, 2: CONFIG.startingBands };
+  state.aimYaw = 0;
+  state.aimPower = CONFIG.defaultPower;
+  state.activeBand = null;
+  state.shake = 0;
+
+  for (const b of state.bands) b.dispose();
+  state.bands = [];
+
+  nameP1.textContent = 'PLAYER 1';
+  nameP2.textContent = mode === 'ai' ? 'AI' : 'PLAYER 2';
+  finalP2Label.textContent = mode === 'ai' ? 'AI' : 'PLAYER 2';
+
+  showScreen('game');
+  updateUI();
+  initAudio();
+  beep(660, 0.08, 'sine', 0.06);
+}
+
+function shoot() {
+  if (state.phase !== 'aiming' && state.phase !== 'ai-aiming') return;
+  if (state.scores[state.currentPlayer] <= 0) return;
+
+  initAudio();
+  state.scores[state.currentPlayer]--;
+  updateUI();
+
+  const pos = getLaunchPos(state.currentPlayer);
+  const vel = computeVelocity(state.currentPlayer, state.aimYaw, state.aimPower);
+  const band = new Band(state.currentPlayer, pos, vel);
+  state.bands.push(band);
+  state.activeBand = band;
+  state.phase = 'flying';
+
+  beep(520, 0.06, 'square', 0.05);
+  setTimeout(() => beep(340, 0.08, 'square', 0.04), 40);
+  vibrate(15);
+
+  trajGeo.setDrawRange(0, 0);
+  landMarker.visible = false;
+  updateUI();
+}
+
+function onBandSettled(band) {
+  if (state.phase !== 'flying') return;
+  state.phase = 'resolving';
+  updateUI();
+
+  const myGameId = state.gameId;
+  setTimeout(() => {
+    if (state.gameId !== myGameId) return;
+    resolveOverlaps(band);
+  }, 350);
+}
+
+function resolveOverlaps(band) {
+  const opponent = band.owner === 1 ? 2 : 1;
+  const captured = [];
+
+  for (const other of state.bands) {
+    if (other === band) continue;
+    if (other.owner !== opponent) continue;
+    if (other.captured) continue;
+    const dx = other.position.x - band.position.x;
+    const dz = other.position.z - band.position.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist < CONFIG.overlapRadius) captured.push(other);
+  }
+
+  const myGameId = state.gameId;
+
+  if (captured.length > 0) {
+    state.scores[band.owner] += captured.length;
+    state.scores[opponent] -= captured.length;
+    updateUI();
+    pulseScore(band.owner);
+
+    beep(880, 0.07, 'sine', 0.09);
+    setTimeout(() => beep(1320, 0.12, 'sine', 0.07), 70);
+    setTimeout(() => beep(1760, 0.1, 'sine', 0.05), 150);
+    vibrate([30, 40, 30]);
+
+    triggerShake(0.35);
+
+    const colorHex = band.owner === 1 ? COLORS.p1Hex : COLORS.p2Hex;
+    showFloatingText(`+${captured.length}`, band.position.clone(), colorHex);
+
+    for (const c of captured) {
+      c.captured = true;
+      c.captureT = 0;
+    }
+
+    setTimeout(() => {
+      if (state.gameId !== myGameId) return;
+      for (const c of captured) {
+        c.dispose();
+        const idx = state.bands.indexOf(c);
+        if (idx >= 0) state.bands.splice(idx, 1);
+      }
+      endTurn();
+    }, 650);
+  } else {
+    setTimeout(() => {
+      if (state.gameId !== myGameId) return;
+      endTurn();
+    }, 260);
+  }
+}
+
+function endTurn() {
+  if (state.scores[1] <= 0 || state.scores[2] <= 0) {
+    gameOver();
+    return;
+  }
+
+  state.currentPlayer = state.currentPlayer === 1 ? 2 : 1;
+
+  if (state.scores[state.currentPlayer] <= 0) {
+    gameOver();
+    return;
+  }
+
+  state.phase = 'aiming';
+  state.aimYaw = 0;
+  state.aimPower = CONFIG.defaultPower;
+  state.activeBand = null;
+  updateUI();
+
+  beep(440, 0.06, 'sine', 0.04);
+
+  // Trigger AI turn
+  if (state.mode === 'ai' && state.currentPlayer === 2) {
+    state.phase = 'ai-aiming';
+    updateUI();
+    state.aiTimer = setTimeout(startAITurn, 500);
+  }
+}
+
+function startAITurn() {
+  if (state.phase !== 'ai-aiming') return;
+  if (state.currentPlayer !== 2) return;
+
+  const shot = computeAIShot(2);
+  const startYaw = state.aimYaw;
+  const startPower = state.aimPower;
+  const startTime = performance.now();
+  const duration = 900;
+
+  function animate() {
+    if (state.phase !== 'ai-aiming') return;
+    const elapsed = performance.now() - startTime;
+    const t = Math.min(elapsed / duration, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    state.aimYaw = lerp(startYaw, shot.yaw, ease);
+    state.aimPower = lerp(startPower, shot.power, ease);
+    updatePowerMeterOnly();
+
+    if (t < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      state.aiTimer = setTimeout(() => {
+        if (state.phase === 'ai-aiming') shoot();
+      }, 220);
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+function updatePowerMeterOnly() {
+  const pct = (state.aimPower - CONFIG.minPower) / (CONFIG.maxPower - CONFIG.minPower);
+  powerFill.style.width = (pct * 100) + '%';
+  powerValue.textContent = Math.round(pct * 100) + '%';
+}
+
+function gameOver() {
+  state.phase = 'gameover';
+  state.activeBand = null;
+  clearTimeout(state.aiTimer);
+
+  const s1 = state.scores[1];
+  const s2 = state.scores[2];
+
+  let winner = 0;
+  if (s1 > s2) winner = 1;
+  else if (s2 > s1) winner = 2;
+
+  finalP1.textContent = s1;
+  finalP2.textContent = s2;
+
+  winnerText.classList.remove('p1', 'p2');
+  if (winner === 1) {
+    winnerText.textContent = 'PLAYER 1 WINS!';
+    winnerText.classList.add('p1');
+    chord([523, 659, 784, 1047], 0.4, 0.06);
+  } else if (winner === 2) {
+    winnerText.textContent = state.mode === 'ai' ? 'AI WINS!' : 'PLAYER 2 WINS!';
+    winnerText.classList.add('p2');
+    chord([523, 659, 784, 1047], 0.4, 0.06);
+  } else {
+    winnerText.textContent = 'DRAW!';
+    chord([440, 440], 0.3, 0.05);
+  }
+
+  vibrate(winner === 1 ? [40, 60, 40, 60, 80] : [200]);
+
+  updateUI();
+  showScreen('gameover');
+}
+
+/* ============================================================
+   INPUT
+   ============================================================ */
+const keys = {};
+
+window.addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (state.phase === 'aiming') shoot();
+  }
+  if (e.code === 'Escape') {
+    if (state.phase !== 'menu' && state.phase !== 'gameover') {
+      state.gameId++;
+      clearTimeout(state.aiTimer);
+      state.phase = 'menu';
+      showScreen('menu');
+      for (const b of state.bands) b.dispose();
+      state.bands = [];
+    }
+  }
+  if (e.code === 'KeyR' && state.phase === 'gameover') {
+    startGame(state.mode);
+  }
+});
+
+window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+/* Pointer / Touch aiming */
+let pointerActive = false;
+let pointerStart = { x: 0, y: 0 };
+let pointerCur = { x: 0, y: 0 };
+let pointerId = null;
+const DRAG_THRESHOLD = 22;
+
+function onPointerDown(e) {
+  if (state.phase !== 'aiming') return;
+  // Ignore if started on shoot button
+  if (e.target === shootBtn) return;
+
+  initAudio();
+  pointerActive = true;
+  pointerId = e.pointerId;
+  pointerStart.x = e.clientX;
+  pointerStart.y = e.clientY;
+  pointerCur.x = e.clientX;
+  pointerCur.y = e.clientY;
+
+  try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+}
+
+function onPointerMove(e) {
+  if (!pointerActive || e.pointerId !== pointerId) return;
+  e.preventDefault();
+  pointerCur.x = e.clientX;
+  pointerCur.y = e.clientY;
+  applyPointerAim();
+}
+
+function onPointerUp(e) {
+  if (!pointerActive || e.pointerId !== pointerId) return;
+  pointerActive = false;
+  pointerId = null;
+
+  const dx = pointerCur.x - pointerStart.x;
+  const dy = pointerCur.y - pointerStart.y;
+  const dist = Math.hypot(dx, dy);
+
+  if (dist > DRAG_THRESHOLD && state.phase === 'aiming') {
+    shoot();
+  }
+}
+
+canvas.addEventListener('pointerdown', onPointerDown);
+canvas.addEventListener('pointermove', onPointerMove, { passive: false });
+canvas.addEventListener('pointerup', onPointerUp);
+canvas.addEventListener('pointercancel', () => {
+  pointerActive = false;
+  pointerId = null;
+});
+
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+function applyPointerAim() {
+  const dx = pointerCur.x - pointerStart.x;
+  const dy = pointerCur.y - pointerStart.y;
+
+  const yawSensitivity = 0.006;
+  state.aimYaw = clamp(dx * yawSensitivity, -CONFIG.maxYaw, CONFIG.maxYaw);
+
+  const powerRange = CONFIG.maxPower - CONFIG.minPower;
+  const powerSensitivity = 0.0055;
+  state.aimPower = clamp(
+    CONFIG.defaultPower + (-dy) * powerSensitivity * powerRange,
+    CONFIG.minPower,
+    CONFIG.maxPower
+  );
+
+  updatePowerMeterOnly();
+}
+
+/* Shoot button */
+shootBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (state.phase === 'aiming') shoot();
+});
+
+/* ============================================================
+   UPDATE LOOP
+   ============================================================ */
+function updateAim(dt) {
+  if (state.phase !== 'aiming') return;
+
+  const rotateSpeed = 1.7;
+  const powerSpeed = 8;
+
+  if (keys['ArrowLeft'] || keys['KeyA']) {
+    state.aimYaw = clamp(state.aimYaw - rotateSpeed * dt, -CONFIG.maxYaw, CONFIG.maxYaw);
+  }
+  if (keys['ArrowRight'] || keys['KeyD']) {
+    state.aimYaw = clamp(state.aimYaw + rotateSpeed * dt, -CONFIG.maxYaw, CONFIG.maxYaw);
+  }
+  if (keys['ArrowUp'] || keys['KeyW']) {
+    state.aimPower = clamp(state.aimPower + powerSpeed * dt, CONFIG.minPower, CONFIG.maxPower);
+  }
+  if (keys['ArrowDown'] || keys['KeyS']) {
+    state.aimPower = clamp(state.aimPower - powerSpeed * dt, CONFIG.minPower, CONFIG.maxPower);
+  }
+
+  updatePowerMeterOnly();
+}
+
+function updateTrajectory() {
+  if (state.phase !== 'aiming' && state.phase !== 'ai-aiming') {
+    trajGeo.setDrawRange(0, 0);
+    landMarker.visible = false;
+    return;
+  }
+
+  const pts = computeTrajectory(state.currentPlayer, state.aimYaw, state.aimPower);
+  const count = Math.min(pts.length, MAX_TRAJ);
+  for (let i = 0; i < count; i++) {
+    trajPositions[i * 3] = pts[i].x;
+    trajPositions[i * 3 + 1] = pts[i].y;
+    trajPositions[i * 3 + 2] = pts[i].z;
+  }
+  trajGeo.attributes.position.needsUpdate = true;
+  trajGeo.setDrawRange(0, count);
+
+  // Color by player
+  trajPoints.material.color.setHex(state.currentPlayer === 1 ? COLORS.p1 : COLORS.p2);
+
+  if (pts.length > 0) {
+    const last = pts[pts.length - 1];
+    landMarker.position.set(last.x, 0.018, last.z);
+    landMarker.visible = true;
+    landMarker.material.color.setHex(state.currentPlayer === 1 ? COLORS.p1 : COLORS.p2);
+    const pulse = 1 + Math.sin(state.time * 5) * 0.08;
+    landMarker.scale.setScalar(pulse);
+  }
+}
+
+function updatePads(dt) {
+  const activePad = state.currentPlayer === 1 ? pad1 : pad2;
+  const inactivePad = state.currentPlayer === 1 ? pad2 : pad1;
+
+  activePad.userData.ring.rotation.z += dt * 0.8;
+
+  const aimingPhase = state.phase === 'aiming' || state.phase === 'ai-aiming';
+  const pulse = 0.5 + Math.sin(state.time * 3) * 0.15;
+  activePad.userData.ringMat.opacity = aimingPhase ? pulse : 0.3;
+  activePad.userData.innerMat.opacity = aimingPhase ? 0.12 : 0.05;
+  inactivePad.userData.ringMat.opacity = 0.2;
+  inactivePad.userData.innerMat.opacity = 0.04;
+}
+
+function update(dt) {
+  state.time += dt;
+
+  updateAim(dt);
+  updateTrajectory();
+  updatePads(dt);
+
+  if (state.activeBand) {
+    state.activeBand.update(dt);
+    if (state.phase === 'flying' && state.activeBand.settled) {
+      onBandSettled(state.activeBand);
+    }
+  }
+
+  for (const b of state.bands) {
+    if (b !== state.activeBand) b.update(dt);
+  }
+
+  // Camera shake
+  if (state.shake > 0.001) {
+    const baseX = 0;
+    const baseY = getCameraBaseY();
+    const baseZ = getCameraBaseZ();
+    camera.position.set(
+      baseX + (Math.random() - 0.5) * state.shake,
+      baseY + (Math.random() - 0.5) * state.shake,
+      baseZ + (Math.random() - 0.5) * state.shake
+    );
+    camera.lookAt(CONFIG.camLook);
+    state.shake *= 0.88;
+  } else {
+    camera.position.x = lerp(camera.position.x, 0, 0.15);
+    camera.position.y = lerp(camera.position.y, getCameraBaseY(), 0.15);
+    camera.position.z = lerp(camera.position.z, getCameraBaseZ(), 0.15);
+    camera.lookAt(CONFIG.camLook);
+  }
+}
+
+function getCameraBaseY() { return 20; }
+function getCameraBaseZ() { return 15; }
+
+/* ============================================================
+   RESIZE — adapt FOV for any aspect ratio
+   ============================================================ */
+function onResize() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const aspect = w / h;
+
+  camera.aspect = aspect;
+
+  // Compute FOV needed to fit the field
+  const camPos = new THREE.Vector3(0, getCameraBaseY(), getCameraBaseZ());
+  const camDir = CONFIG.camLook.clone().sub(camPos).normalize();
+  const worldUp = new THREE.Vector3(0, 1, 0);
+  const right = new THREE.Vector3().crossVectors(camDir, worldUp).normalize();
+  const up = new THREE.Vector3().crossVectors(right, camDir).normalize();
+
+  const corners = [
+    new THREE.Vector3(10.5, 0, 10.5),
+    new THREE.Vector3(-10.5, 0, 10.5),
+    new THREE.Vector3(10.5, 0, -10.5),
+    new THREE.Vector3(-10.5, 0, -10.5),
+  ];
+
+  let maxTanH = 0, maxTanV = 0;
+  for (const c of corners) {
+    const v = c.clone().sub(camPos);
+    const dist = v.dot(camDir);
+    const hComp = Math.abs(v.dot(right));
+    const vComp = Math.abs(v.dot(up));
+    if (dist > 0.1) {
+      maxTanH = Math.max(maxTanH, hComp / dist);
+      maxTanV = Math.max(maxTanV, vComp / dist);
+    }
+  }
+
+  // Margin for HUD
+  maxTanH *= 1.12;
+  maxTanV *= 1.18;
+
+  const tanHalfH = maxTanH;
+  const tanHalfV = Math.max(maxTanV, tanHalfH / aspect);
+  let fov = 2 * Math.atan(tanHalfV) * 180 / Math.PI;
+  fov = clamp(fov, 45, 92);
+
+  camera.fov = fov;
+  camera.updateProjectionMatrix();
+
+  renderer.setSize(w, h);
+  renderer.setPixelRatio(isLowEnd ? 1 : Math.min(window.devicePixelRatio, 1.75));
+}
+
+window.addEventListener('resize', onResize);
+window.addEventListener('orientationchange', () => setTimeout(onResize, 150));
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', onResize);
+}
+
+/* ============================================================
+   RENDER LOOP
+   ============================================================ */
+const clock = new THREE.Clock();
+
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  update(dt);
+  renderer.render(scene, camera);
+});
+
+/* ============================================================
+   BUTTON HANDLERS
+   ============================================================ */
+document.getElementById('start-ai-btn').addEventListener('click', () => startGame('ai'));
+document.getElementById('start-local-btn').addEventListener('click', () => startGame('local'));
+document.getElementById('howto-btn').addEventListener('click', () => showScreen('howto'));
+document.getElementById('howto-back').addEventListener('click', () => showScreen('menu'));
+document.getElementById('replay-btn').addEventListener('click', () => startGame(state.mode));
+document.getElementById('menu-btn').addEventListener('click', () => {
+  state.gameId++;
+  clearTimeout(state.aiTimer);
+  state.phase = 'menu';
+  for (const b of state.bands) b.dispose();
+  state.bands = [];
+  showScreen('menu');
+});
+
+/* Prevent context menu / long-press selection */
+document.addEventListener('contextmenu', (e) => {
+  if (e.target.tagName !== 'BUTTON') e.preventDefault();
+});
+document.addEventListener('gesturestart', (e) => e.preventDefault());
+document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+
+/* ============================================================
+   INIT
+   ============================================================ */
+onResize();
+updateUI();
+
+const loadingEl = document.getElementById('loading');
+setTimeout(() => {
+  loadingEl.classList.add('hidden');
+  setTimeout(() => loadingEl.remove(), 500);
+}, 350);
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (audioCtx) audioCtx.suspend();
+  } else {
+    if (audioCtx) audioCtx.resume();
+  }
+});
+
+console.log('%c DOBO ', 'background:#00d9ff;color:#000;font-weight:bold;padding:2px 6px;border-radius:3px;', 'Mobile-ready · AI opponent · Three.js');
+</script>
+</body>
+</html>
