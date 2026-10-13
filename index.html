@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Eph playground Road — Team Playground</title>
+<title>Portharcourt EPH — Team Playground</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23111'/><text x='16' y='23' font-size='16' font-family='monospace' font-weight='900' fill='%23ffd23f' text-anchor='middle'>eph</text></svg>">
 <style>
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -12,47 +12,47 @@
             touch-action:none;user-select:none;-webkit-user-select:none;
             overscroll-behavior:none}
   canvas{display:block;touch-action:none}
-  #hud{position:fixed;left:12px;top:10px;color:#fff;font-size:11px;line-height:1.7;
-       text-shadow:0 1px 4px rgba(0,0,0,.85);pointer-events:none;z-index:20}
-  #hud b{color:#ffd23f}
-  #hud .k{color:#8ee6ff}
-  #hud .s{opacity:.8}
-  #stat{margin-top:3px}
-  #ephLogo{position:fixed;left:12px;bottom:14px;z-index:23;
-           display:flex;align-items:center;gap:8px;
-           background:rgba(0,0,0,.5);border:2px solid #ffd23f;
-           border-radius:8px;padding:5px 11px 5px 8px;
-           color:#ffd23f;font:900 18px/1 ui-monospace,monospace;
-           letter-spacing:2px;text-shadow:0 1px 4px rgba(0,0,0,.9);
-           box-shadow:0 3px 14px rgba(0,0,0,.5)}
-  #ephLogo svg{display:block}
 
-  #visitors{position:fixed;right:12px;top:10px;z-index:23;
-            display:flex;align-items:center;gap:7px;
-            background:rgba(0,0,0,.42);border:1px solid rgba(255,255,255,.22);
-            border-radius:8px;padding:5px 9px;
-            color:#fff;font:700 11px/1 ui-monospace,monospace;letter-spacing:.5px;
-            text-shadow:0 1px 3px rgba(0,0,0,.8)}
-  #visitors img{display:block;height:18px;image-rendering:crisp-edges}
-  #visitors .dot{width:7px;height:7px;border-radius:50%;background:#2bff5a;
-                 box-shadow:0 0 7px #2bff5a;animation:pulse 2s infinite}
-  #visitors .dot.cached{background:#ffd23f;box-shadow:0 0 7px #ffd23f}
+  /* ---------- TOP LEFT: brand + HUD ---------- */
+  #hud{position:fixed;left:10px;top:8px;color:#fff;font-size:11px;line-height:1.65;
+       text-shadow:0 1px 4px rgba(0,0,0,.85);pointer-events:none;z-index:22;
+       max-width:46vw}
+  #hud .brand{display:flex;align-items:center;gap:6px;font-size:12px}
+  #hud .brand svg{display:block;flex-shrink:0}
+  #hud .brand b{color:#ffd23f;letter-spacing:1.5px;white-space:nowrap}
+  #hud .k{color:#8ee6ff}
+  #hud .s{opacity:.8;font-size:10px}
+  #stat{margin-top:3px;font-size:10px}
+
+  /* ---------- TOP CENTER: score ---------- */
+  #scoreBar{position:fixed;top:8px;left:50%;transform:translateX(-50%);
+            display:flex;gap:8px;align-items:center;z-index:22;pointer-events:none;
+            font:900 14px/1 ui-monospace,monospace;letter-spacing:1px;
+            text-shadow:0 2px 8px rgba(0,0,0,.75)}
+  #scoreBar .t{padding:4px 9px;border-radius:8px;color:#fff;
+               border:2px solid rgba(255,255,255,.35);font-size:12px}
+  #scoreBar .r{background:rgba(210,40,30,.9)}
+  #scoreBar .b{background:linear-gradient(90deg,#75AADB 0 40%,#fff 40% 60%,#75AADB 60% 100%);
+               color:#0a2a50;text-shadow:none}
+  #scoreBar .v{color:#ffd23f;font-size:17px}
+
+  /* ---------- TOP RIGHT: visitors ---------- */
+  #visitors{position:fixed;right:8px;top:8px;z-index:22;
+            display:flex;align-items:center;gap:5px;
+            background:rgba(0,0,0,.48);border:1px solid rgba(255,255,255,.22);
+            border-radius:7px;padding:4px 7px;
+            color:#fff;font:700 9px/1 ui-monospace,monospace;letter-spacing:.5px;
+            text-shadow:0 1px 3px rgba(0,0,0,.8);max-width:32vw;overflow:hidden}
+  #visitors img{display:block;height:16px;image-rendering:crisp-edges}
+  #visitors .dot{width:6px;height:6px;border-radius:50%;background:#2bff5a;
+                 box-shadow:0 0 6px #2bff5a;animation:pulse 2s infinite;flex-shrink:0}
+  #visitors .dot.cached{background:#ffd23f;box-shadow:0 0 6px #ffd23f;animation:none}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
-  #scoreBar{position:fixed;top:10px;left:50%;transform:translateX(-50%);
-            display:flex;gap:10px;align-items:center;z-index:22;pointer-events:none;
-            font:900 15px/1 ui-monospace,monospace;letter-spacing:1px;
-            text-shadow:0 2px 8px rgba(0,0,0,.75)}
-  #scoreBar .t{padding:5px 11px;border-radius:9px;color:#fff;
-               border:2px solid rgba(255,255,255,.35)}
-  #scoreBar .r{background:rgba(210,40,30,.88)}
-  #scoreBar .b{background:linear-gradient(90deg,#75AADB 0 40%,#ffffff 40% 60%,#75AADB 60% 100%);
-               color:#0a2a50;text-shadow:none}
-  #scoreBar .v{color:#ffd23f;font-size:19px}
-
-  #goalFlash{position:fixed;top:32%;left:50%;
+  /* ---------- GOAL FLASH ---------- */
+  #goalFlash{position:fixed;top:30%;left:50%;
              transform:translate(-50%,-50%) scale(.35);
-             font:900 min(15vw,84px)/1 ui-monospace,monospace;
+             font:900 min(14vw,80px)/1 ui-monospace,monospace;
              color:#ffd23f;letter-spacing:3px;
              text-shadow:0 0 26px #ff6b00,0 0 62px #ff3c00,0 5px 0 #8a3a00;
              opacity:0;pointer-events:none;z-index:30;white-space:nowrap;
@@ -67,129 +67,203 @@
     70%{opacity:1;transform:translate(-50%,-50%) scale(1)}
     100%{opacity:0;transform:translate(-50%,-50%) scale(1.16)}}
 
-  #joyZone{position:fixed;left:0;bottom:0;width:52%;height:48%;
-           z-index:15;touch-action:none;pointer-events:auto}
-  #joyBase{position:absolute;width:130px;height:130px;border-radius:50%;
-           border:2.5px solid rgba(255,255,255,.55);
-           background:radial-gradient(circle,rgba(255,255,255,.16),rgba(0,0,0,.18));
-           transform:translate(-50%,-50%);opacity:0;transition:opacity .12s;
-           pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.35)}
-  #joyKnob{position:absolute;width:58px;height:58px;border-radius:50%;
-           background:radial-gradient(circle at 35% 30%,#fff,#ffb84d 70%,#e08a20);
-           transform:translate(-50%,-50%);opacity:0;transition:opacity .12s;
-           pointer-events:none;box-shadow:0 3px 14px rgba(0,0,0,.5)}
-  #joyBase.on,#joyKnob.on{opacity:1}
+  /* ---------- JOYSTICK ZONES ---------- */
+  /* Left zone = movement. Right zone = camera. Both capture pointers. */
+  #joyZoneL{position:fixed;left:0;bottom:0;width:45%;height:55%;
+            z-index:15;touch-action:none;pointer-events:auto}
+  #joyZoneR{position:fixed;right:0;bottom:0;width:45%;height:55%;
+            z-index:15;touch-action:none;pointer-events:auto}
 
+  .joyBase{position:absolute;width:130px;height:130px;border-radius:50%;
+           border:2.5px solid rgba(255,255,255,.55);
+           transform:translate(-50%,-50%);opacity:0;
+           transition:opacity .14s;pointer-events:none;
+           box-shadow:0 4px 20px rgba(0,0,0,.35)}
+  .joyBase.on{opacity:1}
+  #joyBaseL{background:radial-gradient(circle,rgba(255,255,255,.18),rgba(0,0,0,.20))}
+  #joyBaseR{background:radial-gradient(circle,rgba(150,200,255,.22),rgba(0,0,0,.22))}
+
+  .joyKnob{position:absolute;width:58px;height:58px;border-radius:50%;
+           transform:translate(-50%,-50%);opacity:0;
+           transition:opacity .14s;pointer-events:none;
+           box-shadow:0 3px 14px rgba(0,0,0,.5)}
+  .joyKnob.on{opacity:1}
+  #joyKnobL{background:radial-gradient(circle at 35% 30%,#fff,#ffb84d 70%,#e08a20)}
+  #joyKnobR{background:radial-gradient(circle at 35% 30%,#fff,#7fc0ff 70%,#2a6fd0)}
+
+  /* ---------- ACTION BUTTONS (above right joystick zone) ---------- */
   .btn{position:fixed;z-index:16;border-radius:50%;border:3px solid #fff;
-       color:#fff;font:900 17px/1 ui-monospace,monospace;letter-spacing:1px;
+       color:#fff;font:900 15px/1 ui-monospace,monospace;letter-spacing:1px;
        display:flex;align-items:center;justify-content:center;
        box-shadow:0 5px 20px rgba(0,0,0,.5);touch-action:none;
        transition:transform .07s,background .12s;
        -webkit-user-select:none;user-select:none}
   .btn:active,.btn.down{transform:scale(.9)}
-  #btnKick{right:22px;bottom:calc(28px + env(safe-area-inset-bottom));
-           width:96px;height:96px;background:rgba(230,60,40,.92)}
+  #btnKick{right:14px;bottom:calc(55% + 14px);
+           width:82px;height:82px;background:rgba(230,60,40,.94)}
   #btnKick.hot{background:rgba(255,190,30,.96);color:#3a2400;border-color:#fff3a0}
-  #btnJump{right:calc(22px + 88px);bottom:calc(94px + env(safe-area-inset-bottom));
-           width:78px;height:78px;background:rgba(60,140,230,.92)}
-  #btnKick:active{background:rgba(255,130,60,.98)}
-  #btnJump:active{background:rgba(120,190,255,.98)}
-  @media (min-width:900px){ #joyZone{width:38%;height:42%} }
+  #btnJump{right:calc(14px + 94px);bottom:calc(55% + 20px);
+           width:68px;height:68px;background:rgba(60,140,230,.94)}
+
+  /* ---------- CLUB PICKER OVERLAY ---------- */
+  #clubPicker{position:fixed;inset:0;z-index:100;
+              display:flex;align-items:center;justify-content:center;
+              background:linear-gradient(180deg,#7ab0e0 0%,#3a5a80 100%);
+              color:#fff}
+  .cp-inner{text-align:center;
+            background:rgba(0,0,0,.38);
+            border:2px solid rgba(255,255,255,.22);
+            border-radius:16px;
+            padding:22px 26px 26px;
+            box-shadow:0 12px 44px rgba(0,0,0,.5);
+            max-width:94vw}
+  .cp-inner .cp-brand{display:flex;align-items:center;justify-content:center;gap:8px;
+                      color:#ffd23f;font:900 20px/1 ui-monospace,monospace;
+                      letter-spacing:3px}
+  .cp-inner h1{margin:10px 0 4px;
+               font-size:clamp(17px,4.5vw,24px);
+               letter-spacing:3px;color:#fff;
+               text-shadow:0 2px 8px rgba(0,0,0,.6)}
+  .cp-inner p{margin:0 0 20px;font-size:11px;letter-spacing:3px;opacity:.85}
+  .cp-buttons{display:flex;gap:16px;justify-content:center}
+  .cp-btn{width:120px;height:148px;border-radius:14px;
+          border:3px solid rgba(255,255,255,.72);
+          cursor:pointer;
+          display:flex;flex-direction:column;align-items:center;justify-content:center;
+          font-family:inherit;color:#fff;
+          box-shadow:0 6px 18px rgba(0,0,0,.4);
+          transition:transform .12s, box-shadow .18s;
+          touch-action:manipulation;user-select:none;-webkit-user-select:none}
+  .cp-btn:active{transform:scale(.94)}
+  .cp-btn.red{background:linear-gradient(180deg,#e63946 0%,#b91e2a 100%)}
+  .cp-btn.red .num{color:#fff}
+  .cp-btn.arg{background:repeating-linear-gradient(90deg,
+                #75AADB 0 16px, #ffffff 16px 32px);
+              color:#0a2a50;
+              text-shadow:0 1px 2px rgba(255,255,255,.6)}
+  .cp-btn.arg .num{color:#0a2a50}
+  .cp-btn .num{font-size:44px;font-weight:900;letter-spacing:1px;line-height:1}
+  .cp-btn .name{font-size:12px;font-weight:900;letter-spacing:3px;margin-top:8px}
+  .cp-hint{margin-top:18px;font-size:10px;letter-spacing:1.5px;opacity:.7}
+
+  /* ---------- small screens: shrink joystick chrome ---------- */
+  @media (max-height:480px){
+    .joyBase{width:110px;height:110px}
+    .joyKnob{width:50px;height:50px}
+    #btnKick{width:74px;height:74px}
+    #btnJump{width:62px;height:62px}
+    .cp-btn{width:104px;height:132px}
+    .cp-btn .num{font-size:38px}
+  }
 </style>
 </head>
 <body>
 
+<!-- ============ TOP LEFT ============ -->
 <div id="hud">
-  <div><b>LAGOS RING ROAD</b> <span class="s">— team playground</span></div>
-  <div class="s"><span class="k">WASD</span> move · <span class="k">SPACE</span> jump · <span class="k">F</span> kick · drag = camera</div>
+  <div class="brand">
+    <svg width="16" height="16" viewBox="0 0 32 32" aria-hidden="true">
+      <rect x="1" y="1" width="30" height="30" rx="6" fill="#111" stroke="#ffd23f" stroke-width="2"/>
+      <text x="16" y="22" font-size="13" font-family="monospace" font-weight="900" fill="#ffd23f" text-anchor="middle">eph</text>
+    </svg>
+    <b>PORTHARCOURT EPH</b>
+  </div>
+  <div class="s"><span class="k">L-stick</span> move · <span class="k">R-stick</span> camera · <span class="k">SPACE</span> jump · <span class="k">F</span> kick</div>
   <div id="stat"></div>
 </div>
 
-<!-- eph brand badge -->
-<div id="ephLogo" title="eph">
-  <svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true">
-    <rect x="1" y="1" width="30" height="30" rx="6" fill="#111" stroke="#ffd23f" stroke-width="2"/>
-    <text x="16" y="22" font-size="13" font-family="monospace" font-weight="900" fill="#ffd23f" text-anchor="middle">eph</text>
-  </svg>
-  <span>eph</span>
+<!-- ============ TOP CENTER ============ -->
+<div id="scoreBar">
+  <div class="t r" id="scoreTeamLeft">RED</div>
+  <div class="v" id="scoreText">0 – 0</div>
+  <div class="t b" id="scoreTeamRight">ARG</div>
 </div>
 
-<!-- visitor counter (localStorage gated: only hits the API once per device) -->
+<!-- ============ TOP RIGHT ============ -->
 <div id="visitors" title="Total page visits (unique per device)">
   <span class="dot" id="visitorDot"></span>
-  <span id="visitorLabel">VISITORS</span>
+  <span id="visitorLabel">VIS</span>
   <span id="visitorSlot"></span>
 </div>
 
-<div id="scoreBar">
-  <div class="t r">RED 7</div>
-  <div class="v" id="scoreText">0 – 0</div>
-  <div class="t b">ARG</div>
-</div>
-
+<!-- ============ GOAL FLASH ============ -->
 <div id="goalFlash">SUU! GOAL!</div>
 
-<div id="joyZone">
-  <div id="joyBase"></div>
-  <div id="joyKnob"></div>
+<!-- ============ JOYSTICKS ============ -->
+<div id="joyZoneL">
+  <div class="joyBase" id="joyBaseL"></div>
+  <div class="joyKnob" id="joyKnobL"></div>
+</div>
+<div id="joyZoneR">
+  <div class="joyBase" id="joyBaseR"></div>
+  <div class="joyKnob" id="joyKnobR"></div>
 </div>
 
+<!-- ============ ACTION BUTTONS ============ -->
 <button id="btnJump" class="btn">JUMP</button>
 <button id="btnKick" class="btn">KICK</button>
 
+<!-- ============ CLUB PICKER ============ -->
+<div id="clubPicker">
+  <div class="cp-inner">
+    <div class="cp-brand">
+      <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true">
+        <rect x="1" y="1" width="30" height="30" rx="6" fill="#111" stroke="#ffd23f" stroke-width="2"/>
+        <text x="16" y="22" font-size="13" font-family="monospace" font-weight="900" fill="#ffd23f" text-anchor="middle">eph</text>
+      </svg>
+      EPH
+    </div>
+    <h1>PORTHARCOURT EPH</h1>
+    <p>CHOOSE YOUR CLUB</p>
+    <div class="cp-buttons">
+      <div class="cp-btn red" data-team="0">
+        <span class="num">7</span>
+        <span class="name">RED</span>
+      </div>
+      <div class="cp-btn arg" data-team="1">
+        <span class="num">7</span>
+        <span class="name">ARG</span>
+      </div>
+    </div>
+    <div class="cp-hint">TAP A CLUB TO PLAY</div>
+  </div>
+</div>
+
+<!-- ============================================================================
+     VISITOR COUNTER — localStorage-gated
+     ========================================================================== -->
 <script>
-/* ============================================================================
-   VISITOR COUNTER  (localStorage-gated — runs BEFORE the module so it's fast)
-   ----------------------------------------------------------------------------
-   • First visit from this device  → load the badge image (increments the counter)
-   • Every later visit             → show cached badge, no API hit
-   • Clearing site data / incognito → fresh localStorage, may count again
-   ========================================================================== */
 (function () {
-  const KEY         = 'eph_port_counted_v1';
-  const SLUG        = 'Eph-ring-road-playground';   // change to your unique path
-  const BADGE_URL   = 'https://api.visitorbadge.io/api/visitors' +
-                      '?path=' + encodeURIComponent(SLUG) +
-                      '&label=&countColor=%23ffd23f&labelColor=%23ffd23f&style=flat';
-  const slot        = document.getElementById('visitorSlot');
-  const label       = document.getElementById('visitorLabel');
-  const dot         = document.getElementById('visitorDot');
+  const KEY   = 'eph_portharcourt_counted_v1';
+  const SLUG  = 'portharcourt-eph';
+  const URL   = 'https://api.visitorbadge.io/api/visitors' +
+                '?path=' + encodeURIComponent(SLUG) +
+                '&label=&countColor=%23ffd23f&labelColor=%23ffd23f&style=flat';
+  const slot  = document.getElementById('visitorSlot');
+  const label = document.getElementById('visitorLabel');
+  const dot   = document.getElementById('visitorDot');
 
-  let alreadyCounted = false;
-  try { alreadyCounted = !!localStorage.getItem(KEY); } catch (e) {}
+  let seen = false;
+  try { seen = !!localStorage.getItem(KEY); } catch (e) {}
 
-  if (!alreadyCounted) {
-    /* First visit on this device → request the badge once */
-    const img = document.createElement('img');
-    img.id  = 'visitorImg';
-    img.src = BADGE_URL;
-    img.alt = 'visitor count';
-    img.addEventListener('error', () => { img.style.display = 'none'; });
-    slot.appendChild(img);
+  const img = document.createElement('img');
+  img.src = URL;
+  img.alt = '';
+  img.addEventListener('error', () => {
+    img.remove();
+    const t = document.createElement('span');
+    t.textContent = seen ? '✓' : '–';
+    t.style.color = '#ffd23f';
+    t.style.font  = '900 13px ui-monospace,monospace';
+    slot.appendChild(t);
+  });
+  slot.appendChild(img);
 
+  if (!seen) {
     try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {}
-    label.textContent = 'VISITORS';
   } else {
-    /* Returning device → show a cached-friendly note, no API request */
     dot.classList.add('cached');
     label.textContent = 'VISITED';
-
-    /* Try to show the same badge visually without a new network request.
-       If the browser has it cached it will render instantly; otherwise
-       the image fails silently and we fall back to a tick mark. */
-    const img = document.createElement('img');
-    img.id  = 'visitorImg';
-    img.src = BADGE_URL;
-    img.alt = '';
-    img.addEventListener('error', () => {
-      img.remove();
-      const tick = document.createElement('span');
-      tick.textContent = '✓';
-      tick.style.color = '#ffd23f';
-      tick.style.font = '900 14px ui-monospace,monospace';
-      slot.appendChild(tick);
-    });
-    slot.appendChild(img);
   }
 })();
 </script>
@@ -493,8 +567,8 @@ for (let i=0; i<60; i++) {
     W(xform(new THREE.CylinderGeometry(pr,pr,GOAL_H,8), gx, GOAL_H/2, PITCH.cz+GOAL_W/2), colr);
     W(xform(new THREE.CylinderGeometry(pr,pr,GOAL_W+pr*2,8), gx, GOAL_H, PITCH.cz, 0,0,Math.PI/2), colr);
   };
-  addGoal(B.minX, 0xd8483a);   /* RED target */
-  addGoal(B.maxX, 0x75AADB);   /* ARG target */
+  addGoal(B.minX, 0xd8483a);
+  addGoal(B.maxX, 0x75AADB);
 
   const s = SCHOOL;
   W(xform(new THREE.BoxGeometry(s.w,s.h,s.d), s.x, s.h/2, s.z), 0xe6d9bd);
@@ -846,7 +920,7 @@ function buildVendor(kind) {
 }
 
 /* ============================================================================
-   8.  TRAFFIC SIM  (IDM)
+   8.  TRAFFIC SIM
    ========================================================================== */
 function idm(v, gap, dv) {
   const s0=2.0, T=1.15, b=2.4, a=v.aMax;
@@ -1040,17 +1114,11 @@ function playCheer() {
 /* ============================================================================
    10.  TEAMS
    ========================================================================== */
-const TEAM = { RED: 0, BLUE: 1 };
+const TEAM = { RED: 0, ARG: 1 };
 const TEAM_NAME = ['RED', 'ARG'];
 const TEAM_SCORE_GOAL = [PB.minX, PB.maxX];
 const TEAM_OWN_GOAL   = [PB.maxX, PB.minX];
-const teamScore     = [0, 0];
-const teamCelebrate = [0, 0];
-
-const TEAM_COLORS = [
-  { shirt: 0xe63946, pants: 0x1d3557, skin: 0x8d5524, hair: 0x1a1a1a },
-  { shirt: 0x75AADB, pants: 0x151515, skin: 0x6b4a33, hair: 0x0f0f0f }
-];
+const teamScore       = [0, 0];
 
 /* ============================================================================
    11.  TEXTURES
@@ -1120,21 +1188,16 @@ function makeStripeTexture(c1, c2, bands) {
   return tex;
 }
 
-function makeNumberTexture(num, bg, fg, withRing = true) {
+function makeNumberTexture(num, fg) {
   const c = document.createElement('canvas');
   c.width = c.height = 128;
   const g = c.getContext('2d');
-  if (bg) { g.fillStyle = bg; g.fillRect(0, 0, 128, 128); }
-  if (withRing) {
-    g.strokeStyle = 'rgba(0,0,0,.22)';
-    g.lineWidth = 3;
-    g.beginPath(); g.arc(64, 64, 56, 0, TAU); g.stroke();
-  }
+  g.clearRect(0, 0, 128, 128);
   g.fillStyle = fg;
-  g.font = '900 96px ui-monospace, Menlo, Consolas, monospace';
+  g.font = '900 100px ui-monospace, Menlo, Consolas, monospace';
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.fillText(String(num), 64, 70);
+  g.fillText(String(num), 64, 72);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 2;
@@ -1164,11 +1227,10 @@ function makeLogoTexture() {
   return tex;
 }
 
-const EMOTE_TEX  = makeEmoteTexture();
-const EMOTE_MAT  = new THREE.SpriteMaterial({
+const EMOTE_TEX      = makeEmoteTexture();
+const EMOTE_MAT      = new THREE.SpriteMaterial({
   map: EMOTE_TEX, transparent: true, depthTest: true, depthWrite: false
 });
-
 const ARG_STRIPE_TEX = makeStripeTexture('#ffffff', '#75AADB', 5);
 const EPH_LOGO_TEX   = makeLogoTexture();
 
@@ -1200,33 +1262,34 @@ const GEO = {
   mouth : new THREE.BoxGeometry(0.055, 0.014, 0.014),
   smile : new THREE.TorusGeometry(0.040, 0.011, 4, 10, Math.PI).rotateZ(Math.PI)
 };
-
 const FACE_MAT = new THREE.MeshBasicMaterial({ color: 0x101010 });
 
-function buildKid(shirtC, pantsC, skinC, hairC = 0x1a1a1a, opts = {}) {
+function buildKid(shirtC, pantsC, skinC, hairC, opts) {
+  opts = opts || {};
   const root = new THREE.Group();
 
   const hip = new THREE.Group();
   hip.position.y = HIP_Y;
   root.add(hip);
 
-  const addPart = (geo, col, parent = hip) => {
+  const addPart = (geo, col, parent) => {
     const m = new THREE.Mesh(paint(geo.clone(), col), MAT.vehicle);
-    parent.add(m);
+    (parent || hip).add(m);
     return m;
   };
 
+  /* torso — textured (stripes) or plain vertex coloured */
   if (opts.stripeTex) {
-    const torsoGeo = GEO.torso.clone();
     const torsoMat = new THREE.MeshLambertMaterial({
       map: opts.stripeTex, color: 0xffffff
     });
-    hip.add(new THREE.Mesh(torsoGeo, torsoMat));
+    hip.add(new THREE.Mesh(GEO.torso.clone(), torsoMat));
   } else {
     addPart(GEO.torso, shirtC);
   }
   addPart(GEO.neck, skinC);
 
+  /* head */
   const head = new THREE.Group();
   head.position.y = BODY_H + 0.24;
   hip.add(head);
@@ -1249,26 +1312,28 @@ function buildKid(shirtC, pantsC, skinC, hairC = 0x1a1a1a, opts = {}) {
   mouthSmile.visible = false;
   head.add(mouthSmile);
 
+  /* number on the back */
   if (opts.number) {
-    const numTex = makeNumberTexture(opts.number, null, opts.numberFg || '#ffffff');
-    const numMat = new THREE.MeshBasicMaterial({
-      map: numTex, transparent: true, depthWrite: false,
+    const tex = makeNumberTexture(opts.number, opts.numberFg || '#ffffff');
+    const mat = new THREE.MeshBasicMaterial({
+      map: tex, transparent: true, depthWrite: false,
       polygonOffset: true, polygonOffsetFactor: -2
     });
-    const numMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.20, 0.20), numMat);
-    numMesh.position.set(0, BODY_H * 0.62, -0.106);
-    numMesh.rotation.y = Math.PI;
-    hip.add(numMesh);
+    const nm = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.22), mat);
+    nm.position.set(0, BODY_H * 0.62, -0.106);
+    nm.rotation.y = Math.PI;
+    hip.add(nm);
   }
 
+  /* chest logo */
   if (opts.logo) {
-    const logoMat = new THREE.MeshBasicMaterial({
+    const mat = new THREE.MeshBasicMaterial({
       map: EPH_LOGO_TEX, transparent: true, depthWrite: false,
       polygonOffset: true, polygonOffsetFactor: -2
     });
-    const logoMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.085, 0.085), logoMat);
-    logoMesh.position.set(-0.075, BODY_H * 0.72, 0.106);
-    hip.add(logoMesh);
+    const lm = new THREE.Mesh(new THREE.PlaneGeometry(0.085, 0.085), mat);
+    lm.position.set(-0.075, BODY_H * 0.72, 0.106);
+    hip.add(lm);
   }
 
   const emote = new THREE.Sprite(EMOTE_MAT);
@@ -1330,21 +1395,19 @@ function setExpression(rig, mode) {
     f.eyeL.scale.set(1.15, 0.42, 1);
     f.eyeR.scale.set(1.15, 0.42, 1);
     f.emote.visible = true;
-    rig._expr = 'suu';
   } else {
     f.mouthNeutral.visible = true;
     f.mouthSmile.visible   = false;
     f.eyeL.scale.set(1, 1, 1);
     f.eyeR.scale.set(1, 1, 1);
     f.emote.visible = false;
-    rig._expr = 'neutral';
   }
 }
 
 /* ============================================================================
    13.  POSE
    ========================================================================== */
-function legCycle(p, s01, strideAmp = 0.65, kneeAmp = 1.30, footAmp = 0.35) {
+function legCycle(p, s01, strideAmp, kneeAmp, footAmp) {
   const swing = Math.sin(p);
   const lift  = Math.max(0, Math.sin(p + Math.PI * 0.72));
   const hipA  = swing * strideAmp * s01;
@@ -1504,8 +1567,11 @@ const COYOTE      = 0.11;
 const JUMP_BUFFER = 0.14;
 const JUMP_CUT    = 0.42;
 
+/* Player can't leave the pitch — clamp INSIDE the fence line */
+const FIELD_INSET = 0.35;
+
 class Character {
-  constructor(rig, x, z, yaw, team = 0) {
+  constructor(rig, x, z, yaw, team) {
     this.rig = rig;
     this.team = team;
     this.pos = new THREE.Vector3(x, 0, z);
@@ -1615,9 +1681,16 @@ class Character {
       this.cyclePhase = mod(this.cyclePhase + (horizSpeed / strideLen) * TAU * dt, TAU);
     }
 
-    const margin = 8;
-    this.pos.x = clamp(this.pos.x, PB.minX - margin, PB.maxX + margin);
-    this.pos.z = clamp(this.pos.z, PB.minZ - margin, PB.maxZ + margin);
+    /* -------- FIELD BOUNDS: keep everyone inside the fence -------- */
+    const bx0 = PB.minX + FIELD_INSET;
+    const bx1 = PB.maxX - FIELD_INSET;
+    const bz0 = PB.minZ + FIELD_INSET;
+    const bz1 = PB.maxZ - FIELD_INSET;
+
+    if (this.pos.x < bx0) { this.pos.x = bx0; this.vel.x = Math.max(0, this.vel.x); }
+    if (this.pos.x > bx1) { this.pos.x = bx1; this.vel.x = Math.min(0, this.vel.x); }
+    if (this.pos.z < bz0) { this.pos.z = bz0; this.vel.z = Math.max(0, this.vel.z); }
+    if (this.pos.z > bz1) { this.pos.z = bz1; this.vel.z = Math.min(0, this.vel.z); }
 
     this.rig.root.position.copy(this.pos);
     this.rig.root.rotation.y = this.yaw;
@@ -1637,58 +1710,29 @@ class Character {
 }
 
 /* ============================================================================
-   15.  PLAYER + NPCs
+   15.  CLUB KITS
    ========================================================================== */
-const playerRig = buildKid(
-  TEAM_COLORS[TEAM.RED].shirt,
-  TEAM_COLORS[TEAM.RED].pants,
-  TEAM_COLORS[TEAM.RED].skin,
-  TEAM_COLORS[TEAM.RED].hair,
-  { number: 7, numberFg: '#ffffff', logo: true }
-);
-scene.add(playerRig.root);
-
-const PLAYER_SPAWN = { x: PITCH.cx + 2, z: PITCH.cz + 3 };
-const player = new Character(
-  playerRig,
-  PLAYER_SPAWN.x,
-  PLAYER_SPAWN.z,
-  -Math.PI / 2,
-  TEAM.RED
-);
-playerRig.root.position.copy(player.pos);
-
-const npcs = [];
-{
-  const spots = [
-    { x: PITCH.cx - 7, z: PITCH.cz + 4, team: TEAM.BLUE },
-    { x: PITCH.cx + 4, z: PITCH.cz - 3, team: TEAM.RED  },
-    { x: PITCH.cx - 3, z: PITCH.cz - 6, team: TEAM.BLUE }
-  ];
-  for (const s of spots) {
-    const c = TEAM_COLORS[s.team];
-    let rig;
-    if (s.team === TEAM.BLUE) {
-      rig = buildKid(
-        0x75AADB,
-        0x151515,
-        c.skin,
-        c.hair,
-        { stripeTex: ARG_STRIPE_TEX }
-      );
-    } else {
-      rig = buildKid(c.shirt, c.pants, c.skin, c.hair, {
-        number: 9,
-        numberFg: '#ffffff'
-      });
-    }
-    scene.add(rig.root);
-    const ch = new Character(rig, s.x, s.z, rnd() * TAU, s.team);
-    ch.isNPC = true;
-    ch.kickCd = rr(0.4, 1.6);
-    ch.wanderX = ch.pos.x;
-    ch.wanderZ = ch.pos.z;
-    npcs.push(ch);
+function kitFor(team) {
+  if (team === TEAM.RED) {
+    return {
+      shirt: 0xe63946,
+      pants: 0x1d3557,
+      skin:  0x8d5524,
+      hair:  0x1a1a1a,
+      stripeTex: null,
+      numColor: '#ffffff',
+      label: 'RED'
+    };
+  } else {
+    return {
+      shirt: 0x75AADB,
+      pants: 0x151515,
+      skin:  0x6b4a33,
+      hair:  0x0f0f0f,
+      stripeTex: ARG_STRIPE_TEX,
+      numColor: '#0a2a50',
+      label: 'ARG'
+    };
   }
 }
 
@@ -1841,7 +1885,6 @@ function checkGoal() {
   if (ball.goalCooldown > 0) return;
   const gz0 = PITCH.cz - GOAL_W/2, gz1 = PITCH.cz + GOAL_W/2;
   const px = ball.prevPos.x, cx = ball.pos.x;
-
   const crossed = (plane, dir) => {
     if (dir > 0 ? (px < plane && cx >= plane) : (px > plane && cx <= plane)) {
       const t = (plane - px) / (cx - px);
@@ -1851,19 +1894,24 @@ function checkGoal() {
     }
     return false;
   };
-
   if (crossed(PB.minX, -1)) { onGoal(TEAM.RED); return; }
-  if (crossed(PB.maxX,  1)) { onGoal(TEAM.BLUE); return; }
+  if (crossed(PB.maxX,  1)) { onGoal(TEAM.ARG); return; }
 }
 
 /* ============================================================================
-   17.  GOAL + CELEBRATION
+   17.  GAME STATE (initialized after club pick)
    ========================================================================== */
+let player      = null;
+let npcs        = [];
+let playerTeam  = TEAM.RED;
+
 const goalFlashEl = document.getElementById('goalFlash');
 const scoreTextEl = document.getElementById('scoreText');
+const scoreLblL   = document.getElementById('scoreTeamLeft');
+const scoreLblR   = document.getElementById('scoreTeamRight');
 
 function updateScoreHUD() {
-  scoreTextEl.textContent = `${teamScore[0]} – ${teamScore[1]}`;
+  scoreTextEl.textContent = `${teamScore[TEAM.RED]} – ${teamScore[TEAM.ARG]}`;
 }
 
 function onGoal(scoringTeam) {
@@ -1873,22 +1921,20 @@ function onGoal(scoringTeam) {
   ball.goalCooldown = 3.2;
   ball.resetTimer = 2.4;
 
-  const all = [player, ...npcs];
+  const all = [player].concat(npcs).filter(Boolean);
   for (const ch of all) {
     if (ch.team === scoringTeam) ch.celebrate();
   }
-  teamCelebrate[scoringTeam] = 2.6;
 
   playCheer();
 
-  const mine = scoringTeam === player.team;
+  const mine = scoringTeam === playerTeam;
   goalFlashEl.textContent = mine ? 'SUU!  GOAL!' : `${TEAM_NAME[scoringTeam]} GOAL`;
   goalFlashEl.classList.toggle('opp', !mine);
   goalFlashEl.classList.remove('show');
   void goalFlashEl.offsetWidth;
   goalFlashEl.classList.add('show');
 }
-updateScoreHUD();
 
 function updateBall(dt) {
   if (ball.goalCooldown > 0) ball.goalCooldown -= dt;
@@ -1916,7 +1962,85 @@ function updateBall(dt) {
 }
 
 /* ============================================================================
-   18.  INPUT
+   18.  SPAWN PLAYER + NPCs
+   ----------------------------------------------------------------------------
+   Teams are 2v2. Player picks a club; that team is the "home" side.
+   Player wears #7. Teammate wears #9. Opponents wear #10 and #11.
+   ========================================================================== */
+function spawnTeams(chosenTeam) {
+  playerTeam = chosenTeam;
+  const oppTeam = 1 - chosenTeam;
+  const kp = kitFor(chosenTeam);
+  const ko = kitFor(oppTeam);
+
+  /* score bar labels */
+  scoreLblL.textContent = TEAM_NAME[TEAM.RED];
+  scoreLblR.textContent = TEAM_NAME[TEAM.ARG];
+  scoreLblL.className = 't ' + (TEAM.RED === TEAM.RED ? 'r' : 'b');
+  scoreLblR.className = 't ' + (TEAM.ARG === TEAM.RED ? 'r' : 'b');
+
+  /* --- PLAYER --- */
+  const pRig = buildKid(kp.shirt, kp.pants, kp.skin, kp.hair, {
+    number: 7,
+    numberFg: kp.numColor,
+    logo: true,
+    stripeTex: kp.stripeTex
+  });
+  scene.add(pRig.root);
+  player = new Character(
+    pRig,
+    PITCH.cx + 2,
+    PITCH.cz + 3,
+    -Math.PI / 2,
+    chosenTeam
+  );
+  pRig.root.position.copy(player.pos);
+
+  /* --- TEAMMATE (#9) --- */
+  const tRig = buildKid(kp.shirt, kp.pants, kp.skin, kp.hair, {
+    number: 9,
+    numberFg: kp.numColor,
+    stripeTex: kp.stripeTex
+  });
+  scene.add(tRig.root);
+  const tCh = new Character(tRig, PITCH.cx + 5, PITCH.cz - 4, rnd()*TAU, chosenTeam);
+  tCh.isNPC = true;
+  tCh.kickCd = rr(0.4, 1.6);
+  tCh.wanderX = tCh.pos.x;
+  tCh.wanderZ = tCh.pos.z;
+  npcs.push(tCh);
+
+  /* --- OPPONENT #10 --- */
+  const o1Rig = buildKid(ko.shirt, ko.pants, ko.skin, ko.hair, {
+    number: 10,
+    numberFg: ko.numColor,
+    stripeTex: ko.stripeTex
+  });
+  scene.add(o1Rig.root);
+  const o1Ch = new Character(o1Rig, PITCH.cx - 7, PITCH.cz + 4, rnd()*TAU, oppTeam);
+  o1Ch.isNPC = true;
+  o1Ch.kickCd = rr(0.4, 1.6);
+  o1Ch.wanderX = o1Ch.pos.x;
+  o1Ch.wanderZ = o1Ch.pos.z;
+  npcs.push(o1Ch);
+
+  /* --- OPPONENT #11 --- */
+  const o2Rig = buildKid(ko.shirt, ko.pants, ko.skin, ko.hair, {
+    number: 11,
+    numberFg: ko.numColor,
+    stripeTex: ko.stripeTex
+  });
+  scene.add(o2Rig.root);
+  const o2Ch = new Character(o2Rig, PITCH.cx - 3, PITCH.cz - 6, rnd()*TAU, oppTeam);
+  o2Ch.isNPC = true;
+  o2Ch.kickCd = rr(0.4, 1.6);
+  o2Ch.wanderX = o2Ch.pos.x;
+  o2Ch.wanderZ = o2Ch.pos.z;
+  npcs.push(o2Ch);
+}
+
+/* ============================================================================
+   19.  INPUT
    ========================================================================== */
 const keys = Object.create(null);
 let wantJumpThisFrame = false;
@@ -1927,60 +2051,87 @@ addEventListener('keydown', (e) => {
       k.startsWith('arrow'))) ensureAudio();
   keys[k] = true;
   if (k === ' ' || k.startsWith('arrow')) e.preventDefault();
-  if (k === ' ' && !e.repeat) { wantJumpThisFrame = true; player.jump(); }
+  if (k === ' ' && !e.repeat) { wantJumpThisFrame = true; if (player) player.jump(); }
   if (k === 'f' && !e.repeat) doPlayerKick();
 });
 addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
 
-const joyZone = document.getElementById('joyZone');
-const joyBase = document.getElementById('joyBase');
-const joyKnob = document.getElementById('joyKnob');
-let joyId = null;
-let joyOriginX = 0, joyOriginY = 0;
-let joyDX = 0, joyDY = 0;
-const JOY_RADIUS = 60;
+/* ============================================================================
+   20.  VIRTUAL JOYSTICKS  (left = move, right = camera)
+   ========================================================================== */
+class VirtualJoystick {
+  constructor(zoneEl, baseEl, knobEl, radius) {
+    this.zone = zoneEl;
+    this.base = baseEl;
+    this.knob = knobEl;
+    this.radius = radius || 60;
+    this.id = null;
+    this.ox = 0; this.oy = 0;
+    this.dx = 0; this.dy = 0;
+    this.active = false;
 
-function joyStart(e) {
-  if (joyId !== null) return;
-  e.preventDefault();
-  ensureAudio();
-  joyId = e.pointerId;
-  joyOriginX = e.clientX;
-  joyOriginY = e.clientY;
-  joyBase.style.left = joyOriginX + 'px';
-  joyBase.style.top  = joyOriginY + 'px';
-  joyKnob.style.left = joyOriginX + 'px';
-  joyKnob.style.top  = joyOriginY + 'px';
-  joyBase.classList.add('on');
-  joyKnob.classList.add('on');
-  joyZone.setPointerCapture(e.pointerId);
+    const self = this;
+    zoneEl.addEventListener('pointerdown', (e) => self._start(e), { passive: false });
+    zoneEl.addEventListener('pointermove', (e) => self._move(e), { passive: false });
+    zoneEl.addEventListener('pointerup',   (e) => self._end(e),   { passive: false });
+    zoneEl.addEventListener('pointercancel',(e) => self._end(e),  { passive: false });
+  }
+  _start(e) {
+    if (this.id !== null) return;
+    e.preventDefault();
+    ensureAudio();
+    this.id = e.pointerId;
+    this.ox = e.clientX;
+    this.oy = e.clientY;
+    this.base.style.left = this.ox + 'px';
+    this.base.style.top  = this.oy + 'px';
+    this.knob.style.left = this.ox + 'px';
+    this.knob.style.top  = this.oy + 'px';
+    this.base.classList.add('on');
+    this.knob.classList.add('on');
+    this.active = true;
+    try { this.zone.setPointerCapture(e.pointerId); } catch (err) {}
+  }
+  _move(e) {
+    if (e.pointerId !== this.id) return;
+    e.preventDefault();
+    let dx = e.clientX - this.ox;
+    let dy = e.clientY - this.oy;
+    const d = Math.hypot(dx, dy);
+    if (d > this.radius) { dx = dx/d*this.radius; dy = dy/d*this.radius; }
+    this.knob.style.left = (this.ox + dx) + 'px';
+    this.knob.style.top  = (this.oy + dy) + 'px';
+    this.dx = dx / this.radius;             // -1..1
+    this.dy = dy / this.radius;             // screen-down positive
+  }
+  _end(e) {
+    if (e.pointerId !== this.id) return;
+    e.preventDefault();
+    this.id = null;
+    this.dx = 0;
+    this.dy = 0;
+    this.base.classList.remove('on');
+    this.knob.classList.remove('on');
+    this.active = false;
+  }
 }
-function joyMove(e) {
-  if (e.pointerId !== joyId) return;
-  e.preventDefault();
-  let dx = e.clientX - joyOriginX;
-  let dy = e.clientY - joyOriginY;
-  const d = Math.hypot(dx, dy);
-  if (d > JOY_RADIUS) { dx = dx / d * JOY_RADIUS; dy = dy / d * JOY_RADIUS; }
-  joyKnob.style.left = (joyOriginX + dx) + 'px';
-  joyKnob.style.top  = (joyOriginY + dy) + 'px';
-  joyDX = dx / JOY_RADIUS;
-  joyDY = -dy / JOY_RADIUS;
-}
-function joyEnd(e) {
-  if (e.pointerId !== joyId) return;
-  e.preventDefault();
-  joyId = null;
-  joyDX = 0; joyDY = 0;
-  joyBase.classList.remove('on');
-  joyKnob.classList.remove('on');
-}
-joyZone.addEventListener('pointerdown', joyStart);
-joyZone.addEventListener('pointermove', joyMove);
-joyZone.addEventListener('pointerup', joyEnd);
-joyZone.addEventListener('pointercancel', joyEnd);
-joyZone.addEventListener('pointerleave', joyEnd);
 
+const joyL = new VirtualJoystick(
+  document.getElementById('joyZoneL'),
+  document.getElementById('joyBaseL'),
+  document.getElementById('joyKnobL'),
+  60
+);
+const joyR = new VirtualJoystick(
+  document.getElementById('joyZoneR'),
+  document.getElementById('joyBaseR'),
+  document.getElementById('joyKnobR'),
+  60
+);
+
+/* ============================================================================
+   21.  ACTION BUTTONS
+   ========================================================================== */
 const btnJump = document.getElementById('btnJump');
 const btnKick = document.getElementById('btnKick');
 let jumpPointer = null;
@@ -1990,33 +2141,32 @@ btnJump.addEventListener('pointerdown', (e) => {
   ensureAudio();
   jumpPointer = e.pointerId;
   btnJump.classList.add('down');
-  btnJump.setPointerCapture(e.pointerId);
+  try { btnJump.setPointerCapture(e.pointerId); } catch (err) {}
   wantJumpThisFrame = true;
-  player.jump();
+  if (player) player.jump();
 });
-btnJump.addEventListener('pointerup', (e) => {
-  e.preventDefault();
-  if (e.pointerId !== jumpPointer) return;
+function jumpRelease(e) {
+  if (e && e.pointerId !== undefined && e.pointerId !== jumpPointer) return;
   jumpPointer = null;
   btnJump.classList.remove('down');
-  player.releaseJump();
-});
-btnJump.addEventListener('pointercancel', () => {
-  jumpPointer = null;
-  btnJump.classList.remove('down');
-  player.releaseJump();
-});
+  if (player) player.releaseJump();
+}
+btnJump.addEventListener('pointerup', jumpRelease);
+btnJump.addEventListener('pointercancel', jumpRelease);
 
 btnKick.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   ensureAudio();
   btnKick.classList.add('down');
-  btnKick.setPointerCapture(e.pointerId);
+  try { btnKick.setPointerCapture(e.pointerId); } catch (err) {}
   doPlayerKick();
 });
 btnKick.addEventListener('pointerup',   () => btnKick.classList.remove('down'));
 btnKick.addEventListener('pointercancel',() => btnKick.classList.remove('down'));
 
+/* ============================================================================
+   22.  CAMERA (mouse drag on canvas still works on desktop)
+   ========================================================================== */
 const camState = {
   yaw: 0, pitch: 0.45, dist: 7.5,
   targetYaw: 0, targetPitch: 0.45, targetDist: 7.5
@@ -2028,7 +2178,7 @@ renderer.domElement.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   camPointer = e.pointerId;
   camLastX = e.clientX; camLastY = e.clientY;
-  renderer.domElement.setPointerCapture(e.pointerId);
+  try { renderer.domElement.setPointerCapture(e.pointerId); } catch (err) {}
 });
 renderer.domElement.addEventListener('pointermove', (e) => {
   if (e.pointerId !== camPointer) return;
@@ -2051,31 +2201,12 @@ renderer.domElement.addEventListener('wheel', (e) => {
   camState.targetDist = clamp(camState.targetDist + e.deltaY * 0.008, 4, 16);
 }, { passive: false });
 
-let pinchStart = 0, pinchStartDist = 0;
-renderer.domElement.addEventListener('touchstart', (e) => {
-  if (e.touches.length === 2) {
-    pinchStart = Math.hypot(
-      e.touches[0].clientX - e.touches[1].clientX,
-      e.touches[0].clientY - e.touches[1].clientY);
-    pinchStartDist = camState.targetDist;
-  }
-}, { passive: false });
-renderer.domElement.addEventListener('touchmove', (e) => {
-  if (e.touches.length === 2 && pinchStart > 0) {
-    e.preventDefault();
-    const d = Math.hypot(
-      e.touches[0].clientX - e.touches[1].clientX,
-      e.touches[0].clientY - e.touches[1].clientY);
-    camState.targetDist = clamp(pinchStartDist * (pinchStart / d), 4, 16);
-  }
-}, { passive: false });
-renderer.domElement.addEventListener('touchend', (e) => {
-  if (e.touches.length < 2) pinchStart = 0;
-});
-
+/* ============================================================================
+   23.  KICK + PUSH
+   ========================================================================== */
 const KICK_RANGE = 1.6;
 function doPlayerKick() {
-  if (player.celebrateTimer > 0) return;
+  if (!player || player.celebrateTimer > 0) return;
   const dx = ball.pos.x - player.pos.x;
   const dz = ball.pos.z - player.pos.z;
   const d = Math.hypot(dx, dz);
@@ -2100,7 +2231,7 @@ function doPlayerKick() {
 }
 
 function playerBallPush() {
-  if (player.celebrateTimer > 0) return;
+  if (!player || player.celebrateTimer > 0) return;
   const dx = ball.pos.x - player.pos.x;
   const dz = ball.pos.z - player.pos.z;
   const d = Math.hypot(dx, dz);
@@ -2119,7 +2250,7 @@ function playerBallPush() {
 }
 
 /* ============================================================================
-   19.  TEAM AI
+   24.  TEAM AI
    ========================================================================== */
 function updateNPCs(dt) {
   const chaser = [null, null];
@@ -2184,7 +2315,8 @@ function updateNPCs(dt) {
     }
   }
 
-  const all = [player, ...npcs];
+  /* soft separation */
+  const all = [player].concat(npcs).filter(Boolean);
   for (let i = 0; i < all.length; i++) {
     for (let j = i + 1; j < all.length; j++) {
       const a = all[i], b = all[j];
@@ -2204,7 +2336,7 @@ function updateNPCs(dt) {
 }
 
 /* ============================================================================
-   20.  CAMERA
+   25.  CAMERA UPDATE
    ========================================================================== */
 const camLookAt = new THREE.Vector3();
 const camDesired = new THREE.Vector3();
@@ -2213,12 +2345,22 @@ const camRight = new THREE.Vector3();
 const WORLD_UP = new THREE.Vector3(0, 1, 0);
 
 function updateCamera(dt) {
+  /* right joystick drives camera rotation while held */
+  if (joyR.active) {
+    const DEAD = 0.16;
+    let rx = joyR.dx, ry = joyR.dy;
+    if (Math.abs(rx) < DEAD) rx = 0;
+    if (Math.abs(ry) < DEAD) ry = 0;
+    camState.targetYaw   -= rx * 2.8 * dt;
+    camState.targetPitch = clamp(camState.targetPitch + ry * 2.2 * dt, 0.12, 1.35);
+  }
+
   camState.yaw   = damp(camState.yaw,   camState.targetYaw,   10, dt);
   camState.pitch = damp(camState.pitch, camState.targetPitch, 10, dt);
   camState.dist  = damp(camState.dist,  camState.targetDist,  8,  dt);
 
-  const px = player.pos.x;
-  const pz = player.pos.z;
+  const px = player ? player.pos.x : PITCH.cx;
+  const pz = player ? player.pos.z : PITCH.cz;
   const py = 1.10;
 
   camLookAt.set(px, py, pz);
@@ -2244,7 +2386,7 @@ function updateCamera(dt) {
 }
 
 /* ============================================================================
-   21.  MAIN LOOP
+   26.  MAIN LOOP
    ========================================================================== */
 const statEl = document.getElementById('stat');
 let last = performance.now();
@@ -2259,6 +2401,7 @@ function loop(now) {
   last = now;
   simTime += dt;
 
+  /* traffic */
   const st = lightState(simTime);
   paintLights(st);
   updateRingTraffic(dt, simTime, st);
@@ -2266,46 +2409,54 @@ function loop(now) {
   for (const lane of LANES)       for (const v of lane.veh) placeRingVehicle(v, dt, simTime);
   for (const lane of CROSS_LANES) for (const v of lane.veh) placeCrossVehicle(v, dt);
 
+  /* vendors */
   for (let i = 0; i < vendorGroups.length; i++) {
     const m = vendorGroups[i];
     m.position.y = m.userData.baseY + Math.sin(simTime * 1.6 + m.userData.phase) * 0.035;
   }
 
+  /* --- player input: keyboard + left joystick --- */
   let ix = 0, iz = 0;
   if (keys['w'] || keys['arrowup'])    iz += 1;
   if (keys['s'] || keys['arrowdown'])  iz -= 1;
   if (keys['a'] || keys['arrowleft'])  ix -= 1;
   if (keys['d'] || keys['arrowright']) ix += 1;
 
-  if (joyId !== null || Math.abs(joyDX) > 0.001 || Math.abs(joyDY) > 0.001) {
-    ix = joyDX; iz = joyDY;
+  if (joyL.active || Math.abs(joyL.dx) > 0.001 || Math.abs(joyL.dy) > 0.001) {
+    ix = joyL.dx;
+    iz = -joyL.dy;      /* screen down → backward */
   }
 
   let wishX = camFwd.x * iz + camRight.x * ix;
   let wishZ = camFwd.z * iz + camRight.z * ix;
-  const m = Math.hypot(wishX, wishZ);
-  if (m > 1) { wishX /= m; wishZ /= m; }
+  const mm = Math.hypot(wishX, wishZ);
+  if (mm > 1) { wishX /= mm; wishZ /= mm; }
 
   const jumpHeld = !!keys[' '] || jumpPointer !== null;
 
-  player.update(dt, wishX, wishZ, wantJumpThisFrame, jumpHeld);
+  if (player) {
+    player.update(dt, wishX, wishZ, wantJumpThisFrame, jumpHeld);
+  }
   wantJumpThisFrame = false;
 
   playerBallPush();
   updateNPCs(dt);
   updateBall(dt);
 
-  const bdx = ball.pos.x - player.pos.x;
-  const bdz = ball.pos.z - player.pos.z;
-  const bd = Math.hypot(bdx, bdz);
-  const inRange = bd < KICK_RANGE && ball.pos.y < 1.6 && player.celebrateTimer <= 0;
-  kickRing.visible = inRange;
-  if (inRange) {
-    kickRing.position.set(ball.pos.x, GROUND_Y + 0.03, ball.pos.z);
-    const s = 1 + Math.sin(simTime * 8) * 0.08;
-    kickRing.scale.set(s, 1, s);
+  /* kick indicator */
+  if (player) {
+    const bdx = ball.pos.x - player.pos.x;
+    const bdz = ball.pos.z - player.pos.z;
+    const bd = Math.hypot(bdx, bdz);
+    const inRange = bd < KICK_RANGE && ball.pos.y < 1.6 && player.celebrateTimer <= 0;
+    kickRing.visible = inRange;
+    if (inRange) {
+      kickRing.position.set(ball.pos.x, GROUND_Y + 0.03, ball.pos.z);
+      const s = 1 + Math.sin(simTime * 8) * 0.08;
+      kickRing.scale.set(s, 1, s);
+    }
+    btnKick.classList.toggle('hot', inRange);
   }
-  btnKick.classList.toggle('hot', inRange);
 
   updateCamera(dt);
   renderer.render(scene, camera);
@@ -2315,12 +2466,14 @@ function loop(now) {
 
   statEl.innerHTML =
     `fps <b>${fps}</b> · ` +
-    `<span style="color:#ff8575">RED</span> <b>${teamScore[0]}</b>` +
+    `<span style="color:#ff8575">RED</span> <b>${teamScore[TEAM.RED]}</b>` +
     ` – ` +
-    `<b>${teamScore[1]}</b> <span style="color:#9ecfff">ARG</span> · ` +
-    `spd <b>${player.speed.toFixed(1)}</b> ` +
-    `${player.onGround ? '' : '<span style="color:#8ee6ff">AIR</span>'} ` +
-    `${player.celebrateTimer > 0 ? '<span style="color:#ffd23f">SUU!</span>' : ''} · ` +
+    `<b>${teamScore[TEAM.ARG]}</b> <span style="color:#9ecfff">ARG</span> · ` +
+    (player
+      ? `spd <b>${player.speed.toFixed(1)}</b> ` +
+        `${player.onGround ? '' : '<span style="color:#8ee6ff">AIR</span>'} ` +
+        `${player.celebrateTimer > 0 ? '<span style="color:#ffd23f">SUU!</span>' : ''} · `
+      : '') +
     `${SIGNAL_NAMES[st]}`;
 }
 
@@ -2330,7 +2483,26 @@ addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
 });
 
-requestAnimationFrame(loop);
+/* ============================================================================
+   27.  CLUB PICKER → START
+   ========================================================================== */
+const clubPicker = document.getElementById('clubPicker');
+
+document.querySelectorAll('.cp-btn').forEach(btn => {
+  btn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    ensureAudio();
+    const team = parseInt(btn.dataset.team, 10) || 0;
+    clubPicker.style.display = 'none';
+    spawnTeams(team);
+    updateScoreHUD();
+    /* warm up: render one frame before the loop, then start */
+    camera.position.set(PITCH.cx + 2, 5, PITCH.cz + 12);
+    camera.lookAt(PITCH.cx, 1, PITCH.cz);
+    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  }, { passive: false });
+});
 
 ['pointerdown', 'touchstart', 'keydown'].forEach(evt =>
   addEventListener(evt, ensureAudio, { once: true, passive: true }));
