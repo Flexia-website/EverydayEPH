@@ -204,7 +204,7 @@
   #backbtn:active{transform:scale(.94);background:rgba(255,210,63,.9);color:#3a2400}
   #backbtn svg{display:block;flex-shrink:0}
 
-  /* ---- Home indicator (raised above safe area so the browser bar can't hide it) ---- */
+  /* ---- Home indicator (raised above safe area) ---- */
   #homeindicator{
     position:absolute;
     bottom:calc(env(safe-area-inset-bottom,0px) + 8px);
@@ -214,7 +214,7 @@
     transition:opacity .25s,background .25s;
     -webkit-tap-highlight-color:transparent;
     touch-action:manipulation;
-    padding:14px 0;                 /* invisible tap area */
+    padding:14px 0;
     background-clip:content-box;
     background-color:#fff;
   }
@@ -234,10 +234,8 @@
 <div id="phone">
   <div id="wallpaper"></div>
 
-  <!-- Dynamic Island -->
   <div id="island"></div>
 
-  <!-- Status bar -->
   <div id="statusbar">
     <span id="statusTime">9:41</span>
     <div class="right">
@@ -260,7 +258,6 @@
     </div>
   </div>
 
-  <!-- Home screen -->
   <div id="homescreen">
     <div id="widget">
       <div id="widgetDate">Monday, January 1</div>
@@ -268,6 +265,7 @@
     </div>
 
     <div id="appgrid">
+      <!-- DOBO -->
       <button class="app" data-app="dobo" aria-label="Launch DOBO">
         <div class="icon">
           <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -297,6 +295,7 @@
         <span class="app-label">DOBO</span>
       </button>
 
+      <!-- PORTHARCOURT EPH (football) -->
       <button class="app" data-app="eph" aria-label="Launch Portharcourt EPH">
         <div class="icon">
           <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -319,7 +318,34 @@
                   fill="#ffd23f" text-anchor="middle">eph</text>
           </svg>
         </div>
-        <span class="app-label">PORTHARCOURT</span>
+        <span class="app-label">FOOTBALL</span>
+      </button>
+
+      <!-- KITE RUN -->
+      <button class="app" data-app="kite" aria-label="Launch Kite Run">
+        <div class="icon">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="kiteSky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#7ab0e0"/>
+                <stop offset="1" stop-color="#3a6a9a"/>
+              </linearGradient>
+            </defs>
+            <rect width="100" height="100" fill="url(#kiteSky)"/>
+            <circle cx="76" cy="24" r="10" fill="#ffd23f" opacity=".9"/>
+            <polygon points="50,18 66,44 50,70 34,44" fill="#f25c1e"/>
+            <polygon points="50,18 66,44 50,44" fill="#ffd23f"/>
+            <polygon points="50,44 66,44 50,70" fill="#d8384a"/>
+            <polygon points="50,44 34,44 50,70" fill="#ffd23f"/>
+            <path d="M50 70 Q46 78 50 84 Q54 90 50 96"
+                  stroke="#ffd23f" stroke-width="2.4" fill="none"/>
+            <line x1="50" y1="44" x2="18" y2="92"
+                  stroke="#fff" stroke-width="1.2" opacity=".8"/>
+            <circle cx="16" cy="88" r="4" fill="#8d5524"/>
+            <rect x="13" y="92" width="6" height="6" rx="2" fill="#3d8fd0"/>
+          </svg>
+        </div>
+        <span class="app-label">KITE RUN</span>
       </button>
     </div>
 
@@ -347,13 +373,7 @@
       <button class="app" data-app="eph" aria-label="EPH from dock">
         <div class="icon">
           <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="ephBg2" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#7ab0e0"/>
-                <stop offset="1" stop-color="#2a4a70"/>
-              </linearGradient>
-            </defs>
-            <rect width="100" height="100" fill="url(#ephBg2)"/>
+            <rect width="100" height="100" fill="#5a90c8"/>
             <rect x="0" y="0" width="100" height="10" fill="#3f8a3a"/>
             <rect x="0" y="30" width="100" height="10" fill="#3f8a3a"/>
             <rect x="0" y="60" width="100" height="10" fill="#3f8a3a"/>
@@ -361,19 +381,30 @@
             <path d="M50 24 L64 34 L58 50 L42 50 L36 34 Z" fill="#141414"/>
           </svg>
         </div>
-        <span class="app-label">PORTHARCOURT</span>
+        <span class="app-label">FOOTBALL</span>
       </button>
-      <div></div><div></div>
+      <button class="app" data-app="kite" aria-label="Kite Run from dock">
+        <div class="icon">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100" height="100" fill="#5a90c8"/>
+            <polygon points="50,20 68,48 50,76 32,48" fill="#f25c1e"/>
+            <polygon points="50,20 68,48 50,48" fill="#ffd23f"/>
+            <line x1="50" y1="48" x2="18" y2="92"
+                  stroke="#fff" stroke-width="1.4" opacity=".85"/>
+            <circle cx="16" cy="88" r="4" fill="#8d5524"/>
+          </svg>
+        </div>
+        <span class="app-label">KITE RUN</span>
+      </button>
+      <div></div>
     </div>
   </div>
 
-  <!-- App view -->
   <div id="appview">
     <iframe id="gameframe" allow="autoplay; fullscreen; xr-spatial-tracking"
             allowfullscreen></iframe>
   </div>
 
-  <!-- Floating back button (over the game) -->
   <button id="backbtn" aria-label="Back to home">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
          stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -382,10 +413,8 @@
     HOME
   </button>
 
-  <!-- Launch flash -->
   <div id="flash"></div>
 
-  <!-- Home indicator -->
   <div id="homeindicator" role="button" aria-label="Return home"></div>
 </div>
 
@@ -424,7 +453,8 @@
   /* ---------- App registry ---------- */
   const APPS = {
     dobo: { file: 'dobo.html', title: 'DOBO' },
-    eph : { file: 'eph.html',  title: 'Portharcourt EPH' }
+    eph : { file: 'eph.html',  title: 'Portharcourt EPH' },
+    kite: { file: 'kite.html', title: 'Portharcourt Kite Run' }
   };
   let currentApp = null;
 
@@ -472,11 +502,9 @@
     });
   });
 
-  /* Back button (top-left) */
   backbtn.addEventListener('click', (e) => { e.stopPropagation(); goHome(); });
   backbtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); }, { passive: true });
 
-  /* Home indicator tap */
   homeInd.addEventListener('click', (e) => { e.stopPropagation(); goHome(); });
   homeInd.addEventListener('pointerdown', (e) => {
     e.preventDefault(); e.stopPropagation(); goHome();
@@ -497,18 +525,17 @@
     swipeStartY = null;
   }, { passive: true });
 
-  /* Escape on desktop */
   addEventListener('keydown', (e) => { if (e.key === 'Escape') goHome(); });
 
-  /* Prefetch both games so launch feels instant */
-  ['dobo.html','eph.html'].forEach(url => {
+  /* Prefetch all three games */
+  ['dobo.html','eph.html','kite.html'].forEach(url => {
     const l = document.createElement('link');
     l.rel = 'prefetch'; l.href = url;
     document.head.appendChild(l);
   });
 
-  console.log('%c HOME ', 'background:#ffd23f;color:#000;font-weight:900;padding:3px 8px;border-radius:4px;', 'Ready · 2 apps installed');
+  console.log('%c HOME ', 'background:#ffd23f;color:#000;font-weight:900;padding:3px 8px;border-radius:4px;', 'Ready · 3 apps installed');
 })();
 </script>
 </body>
- </html>
+</html>
