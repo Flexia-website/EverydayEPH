@@ -27,6 +27,7 @@
     position:relative;
     width:min(430px,100vw);
     height:min(932px,100vh);
+    height:min(932px,100dvh);
     background:#000;
     border-radius:min(56px,12vw);
     overflow:hidden;
@@ -51,7 +52,6 @@
       linear-gradient(160deg,#0d0b1f 0%,#1a1230 45%,#08060f 100%);
     z-index:0;
   }
-  /* soft blobs */
   #wallpaper::before,#wallpaper::after{
     content:'';position:absolute;border-radius:50%;filter:blur(60px);opacity:.4;
   }
@@ -60,33 +60,37 @@
 
   /* ---- Dynamic Island ---- */
   #island{
-    position:absolute;top:11px;left:50%;transform:translateX(-50%);
+    position:absolute;top:calc(11px + env(safe-area-inset-top,0px));
+    left:50%;transform:translateX(-50%);
     width:124px;height:35px;background:#000;border-radius:20px;z-index:60;
     pointer-events:none;
     box-shadow:0 0 0 1px rgba(255,255,255,.04);
   }
   @media (max-width:520px),(max-height:740px){
-    #island{width:110px;height:32px;top:8px}
+    #island{width:110px;height:32px;top:calc(8px + env(safe-area-inset-top,0px))}
   }
 
   /* ---- Status bar ---- */
   #statusbar{
-    position:absolute;top:0;left:0;right:0;height:52px;
+    position:absolute;top:0;left:0;right:0;
+    height:calc(52px + env(safe-area-inset-top,0px));
+    padding-top:env(safe-area-inset-top,0px);
     display:flex;align-items:center;justify-content:space-between;
-    padding:0 26px;z-index:55;pointer-events:none;
+    padding-left:26px;padding-right:26px;z-index:55;pointer-events:none;
     color:#fff;font-size:14px;font-weight:600;letter-spacing:.2px;
     text-shadow:0 1px 2px rgba(0,0,0,.35);
   }
   #statusbar .right{display:flex;align-items:center;gap:5px}
   #statusbar svg{display:block}
   @media (max-width:520px),(max-height:740px){
-    #statusbar{padding:0 20px;height:46px;font-size:13px}
+    #statusbar{padding-left:20px;padding-right:20px;height:calc(46px + env(safe-area-inset-top,0px));font-size:13px}
   }
 
   /* ---- Home screen ---- */
   #homescreen{
     position:absolute;inset:0;z-index:5;
-    padding:58px 22px 34px;
+    padding:calc(58px + env(safe-area-inset-top,0px)) 22px
+            calc(34px + env(safe-area-inset-bottom,0px));
     display:flex;flex-direction:column;
     transition:transform .45s cubic-bezier(.32,.72,0,1),opacity .3s;
     transform-origin:50% 50%;
@@ -95,7 +99,6 @@
     transform:scale(1.12);opacity:0;pointer-events:none;
   }
 
-  /* Clock widget */
   #widget{
     text-align:center;color:#fff;margin:14px 0 34px;
     text-shadow:0 2px 14px rgba(0,0,0,.55);
@@ -113,7 +116,6 @@
     #widgetTime{font-size:62px}
   }
 
-  /* App grid */
   #appgrid{
     display:grid;grid-template-columns:repeat(4,1fr);
     gap:22px 18px;flex:1;align-content:start;
@@ -151,10 +153,9 @@
     .app-label{font-size:10px;max-width:64px}
   }
 
-  /* Dock */
   #dock{
     margin-top:auto;margin-left:-22px;margin-right:-22px;margin-bottom:-10px;
-    padding:12px 22px 14px;
+    padding:12px 22px calc(14px + env(safe-area-inset-bottom,0px));
     display:grid;grid-template-columns:repeat(4,1fr);
     gap:18px;align-content:center;
     background:rgba(30,30,45,.42);
@@ -162,10 +163,9 @@
     border-top:.5px solid rgba(255,255,255,.12);
     border-radius:36px 36px 0 0;
   }
-  #dock .app{transform:translateY(0)}
   #dock .icon{box-shadow:0 4px 12px rgba(0,0,0,.55),0 0 0 .5px rgba(255,255,255,.12) inset}
   @media (max-width:520px){
-    #dock{gap:14px;padding:10px 18px 12px}
+    #dock{gap:14px;padding:10px 18px calc(12px + env(safe-area-inset-bottom,0px))}
   }
 
   /* ---- App view (fullscreen iframe) ---- */
@@ -180,16 +180,46 @@
     width:100%;height:100%;border:0;display:block;background:#000;
   }
 
-  /* ---- Home indicator ---- */
+  /* ---- Floating BACK button (top-left, safe area aware) ---- */
+  #backbtn{
+    position:absolute;
+    top:calc(env(safe-area-inset-top,0px) + 52px);
+    left:14px;
+    z-index:80;
+    display:none;
+    align-items:center;gap:6px;
+    padding:9px 14px 9px 10px;
+    border-radius:999px;
+    background:rgba(20,20,28,.78);
+    border:1px solid rgba(255,255,255,.20);
+    color:#fff;font:800 12px/1 -apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;
+    letter-spacing:1.4px;text-transform:uppercase;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    box-shadow:0 6px 22px rgba(0,0,0,.55);
+    cursor:pointer;-webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+    transition:transform .12s,background .2s;
+  }
+  #backbtn.on{display:inline-flex}
+  #backbtn:active{transform:scale(.94);background:rgba(255,210,63,.9);color:#3a2400}
+  #backbtn svg{display:block;flex-shrink:0}
+
+  /* ---- Home indicator (raised above safe area so the browser bar can't hide it) ---- */
   #homeindicator{
-    position:absolute;bottom:7px;left:50%;transform:translateX(-50%);
+    position:absolute;
+    bottom:calc(env(safe-area-inset-bottom,0px) + 8px);
+    left:50%;transform:translateX(-50%);
     width:140px;height:5px;border-radius:3px;background:#fff;
-    opacity:.18;z-index:70;cursor:pointer;
+    opacity:.22;z-index:70;cursor:pointer;
     transition:opacity .25s,background .25s;
     -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+    padding:14px 0;                 /* invisible tap area */
+    background-clip:content-box;
+    background-color:#fff;
   }
-  #appview.on ~ #homeindicator{opacity:.85}
-  #homeindicator:active{background:#ffd23f}
+  #appview.on ~ #homeindicator{opacity:.9}
+  #homeindicator:active{background-color:#ffd23f;opacity:1}
 
   /* ---- Launch flash overlay ---- */
   #flash{
@@ -211,20 +241,17 @@
   <div id="statusbar">
     <span id="statusTime">9:41</span>
     <div class="right">
-      <!-- signal -->
       <svg width="18" height="12" viewBox="0 0 18 12" fill="#fff">
         <rect x="0"  y="8" width="3" height="4" rx=".8"/>
         <rect x="4.5" y="6" width="3" height="6" rx=".8"/>
         <rect x="9"  y="3" width="3" height="9" rx=".8"/>
         <rect x="13.5" y="0" width="3" height="12" rx=".8"/>
       </svg>
-      <!-- wifi -->
       <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round">
         <path d="M1 4.2C3 2.3 5.4 1.3 8 1.3s5 .9 7 2.9"/>
         <path d="M3.4 7c1.4-1.3 3-2 4.6-2s3.2.7 4.6 2"/>
         <path d="M5.8 9.5c.7-.6 1.4-1 2.2-1s1.5.4 2.2 1"/>
       </svg>
-      <!-- battery -->
       <svg width="26" height="13" viewBox="0 0 26 13" fill="none">
         <rect x="0.5" y="0.5" width="22" height="12" rx="3.2" stroke="#fff" stroke-opacity=".55"/>
         <rect x="2.5" y="2.5" width="15" height="8" rx="1.6" fill="#fff"/>
@@ -241,7 +268,6 @@
     </div>
 
     <div id="appgrid">
-      <!-- DOBO -->
       <button class="app" data-app="dobo" aria-label="Launch DOBO">
         <div class="icon">
           <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -271,7 +297,6 @@
         <span class="app-label">DOBO</span>
       </button>
 
-      <!-- Portharcourt EPH -->
       <button class="app" data-app="eph" aria-label="Launch Portharcourt EPH">
         <div class="icon">
           <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -282,16 +307,13 @@
               </linearGradient>
             </defs>
             <rect width="100" height="100" fill="url(#ephBg)"/>
-            <!-- pitch stripes -->
             <rect x="0" y="0"  width="100" height="12.5" fill="#3f8a3a"/>
             <rect x="0" y="25" width="100" height="12.5" fill="#3f8a3a"/>
             <rect x="0" y="50" width="100" height="12.5" fill="#3f8a3a"/>
             <rect x="0" y="75" width="100" height="12.5" fill="#3f8a3a"/>
-            <!-- ball -->
             <circle cx="50" cy="50" r="24" fill="#f4f2ea"/>
             <path d="M50 26 L62 34 L58 48 L42 48 L38 34 Z" fill="#141414"/>
             <path d="M42 48 L58 48 L64 60 L50 68 L36 60 Z" fill="#141414" opacity=".75"/>
-            <!-- eph badge -->
             <rect x="6" y="6" width="20" height="20" rx="5" fill="#111" stroke="#ffd23f" stroke-width="2"/>
             <text x="16" y="21" font-size="11" font-family="monospace" font-weight="900"
                   fill="#ffd23f" text-anchor="middle">eph</text>
@@ -301,7 +323,6 @@
       </button>
     </div>
 
-    <!-- Dock -->
     <div id="dock">
       <button class="app" data-app="dobo" aria-label="DOBO from dock">
         <div class="icon">
@@ -352,6 +373,15 @@
             allowfullscreen></iframe>
   </div>
 
+  <!-- Floating back button (over the game) -->
+  <button id="backbtn" aria-label="Back to home">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15 5 L8 12 L15 19"/>
+    </svg>
+    HOME
+  </button>
+
   <!-- Launch flash -->
   <div id="flash"></div>
 
@@ -368,6 +398,7 @@
   const iframe     = document.getElementById('gameframe');
   const flash      = document.getElementById('flash');
   const homeInd    = document.getElementById('homeindicator');
+  const backbtn    = document.getElementById('backbtn');
   const statusTime = document.getElementById('statusTime');
   const widgetTime = document.getElementById('widgetTime');
   const widgetDate = document.getElementById('widgetDate');
@@ -376,7 +407,6 @@
   const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const MONTHS = ['January','February','March','April','May','June',
                   'July','August','September','October','November','December'];
-
   function tick(){
     const now = new Date();
     const h   = now.getHours();
@@ -396,29 +426,21 @@
     dobo: { file: 'dobo.html', title: 'DOBO' },
     eph : { file: 'eph.html',  title: 'Portharcourt EPH' }
   };
-
   let currentApp = null;
 
   /* ---------- Launch ---------- */
   function launchApp(name){
     const app = APPS[name];
-    if (!app) return;
-    if (currentApp) return;
-
+    if (!app || currentApp) return;
     currentApp = name;
-
-    /* Black flash for a clean transition */
     flash.classList.add('on');
-
-    /* Point the iframe at the game */
     iframe.src = app.file;
 
-    /* Show the app view once the flash covers the screen */
     setTimeout(() => {
       homescreen.classList.add('hidden');
       appview.classList.add('on');
+      backbtn.classList.add('on');
       document.title = app.title;
-
       setTimeout(() => flash.classList.remove('on'), 60);
     }, 180);
   }
@@ -430,10 +452,10 @@
 
     setTimeout(() => {
       appview.classList.remove('on');
+      backbtn.classList.remove('on');
       homescreen.classList.remove('hidden');
       document.title = 'Home';
 
-      /* Clear the iframe so the game fully unloads (frees RAM) */
       setTimeout(() => {
         iframe.src = 'about:blank';
         currentApp = null;
@@ -450,48 +472,43 @@
     });
   });
 
-  /* Home indicator tap / swipe-up */
-  homeInd.addEventListener('click', goHome);
-  homeInd.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    goHome();
+  /* Back button (top-left) */
+  backbtn.addEventListener('click', (e) => { e.stopPropagation(); goHome(); });
+  backbtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); }, { passive: true });
+
+  /* Home indicator tap */
+  homeInd.addEventListener('click', (e) => { e.stopPropagation(); goHome(); });
+  homeInd.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); e.stopPropagation(); goHome();
   }, { passive: false });
 
-  /* Swipe up anywhere in the bottom 60px of the app view */
+  /* Swipe up from bottom to go home */
   let swipeStartY = null;
-  appview.addEventListener('touchstart', (e) => {
+  document.addEventListener('touchstart', (e) => {
     if (!currentApp) return;
     const t = e.touches[0];
     const rect = appview.getBoundingClientRect();
-    if (rect.bottom - t.clientY < 80) {
-      swipeStartY = t.clientY;
-    }
+    if (rect.bottom - t.clientY < 100) swipeStartY = t.clientY;
   }, { passive: true });
-  appview.addEventListener('touchend', (e) => {
+  document.addEventListener('touchend', (e) => {
     if (swipeStartY === null) return;
     const endY = e.changedTouches[0].clientY;
-    if (swipeStartY - endY > 60) goHome();
+    if (swipeStartY - endY > 55) goHome();
     swipeStartY = null;
   }, { passive: true });
 
-  /* Escape key on desktop */
-  addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') goHome();
-  });
+  /* Escape on desktop */
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') goHome(); });
 
-  /* ---- First-run nudge: preload metadata of both games so the launch is snappy ---- */
-  const preloads = ['dobo.html', 'eph.html'].map(url => {
+  /* Prefetch both games so launch feels instant */
+  ['dobo.html','eph.html'].forEach(url => {
     const l = document.createElement('link');
-    l.rel = 'prefetch';
-    l.href = url;
+    l.rel = 'prefetch'; l.href = url;
     document.head.appendChild(l);
-    return l;
   });
-  /* nothing else to do with them */
 
   console.log('%c HOME ', 'background:#ffd23f;color:#000;font-weight:900;padding:3px 8px;border-radius:4px;', 'Ready · 2 apps installed');
-
 })();
 </script>
 </body>
-</html>
+ </html>
