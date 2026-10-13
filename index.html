@@ -3,2396 +3,495 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Portharcourt EPH — Team Playground</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23111'/><text x='16' y='23' font-size='16' font-family='monospace' font-weight='900' fill='%23ffd23f' text-anchor='middle'>eph</text></svg>">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000">
+<title>Home</title>
 <style>
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;height:100%;overflow:hidden;background:#7ab0e0;
-            font-family:ui-monospace,Menlo,Consolas,monospace;
-            touch-action:none;user-select:none;-webkit-user-select:none;
-            overscroll-behavior:none}
-  canvas{display:block;touch-action:none}
-
-  #hud{position:fixed;left:10px;top:8px;color:#fff;font-size:11px;line-height:1.65;
-       text-shadow:0 1px 4px rgba(0,0,0,.85);pointer-events:none;z-index:22;
-       max-width:46vw}
-  #hud .brand{display:flex;align-items:center;gap:6px;font-size:12px}
-  #hud .brand svg{display:block;flex-shrink:0}
-  #hud .brand b{color:#ffd23f;letter-spacing:1.5px;white-space:nowrap}
-  #hud .k{color:#8ee6ff}
-  #hud .s{opacity:.8;font-size:10px}
-  #stat{margin-top:3px;font-size:10px}
-
-  #scoreBar{position:fixed;top:8px;left:50%;transform:translateX(-50%);
-            display:flex;gap:8px;align-items:center;z-index:22;pointer-events:none;
-            font:900 14px/1 ui-monospace,monospace;letter-spacing:1px;
-            text-shadow:0 2px 8px rgba(0,0,0,.75);opacity:0;transition:opacity .3s}
-  #scoreBar.on{opacity:1}
-  #scoreBar .t{padding:4px 9px;border-radius:8px;color:#fff;
-               border:2px solid rgba(255,255,255,.35);font-size:12px}
-  #scoreBar .r{background:rgba(210,40,30,.9)}
-  #scoreBar .b{background:linear-gradient(90deg,#75AADB 0 40%,#fff 40% 60%,#75AADB 60% 100%);
-               color:#0a2a50;text-shadow:none}
-  #scoreBar .v{color:#ffd23f;font-size:17px}
-
-  #visitors{position:fixed;right:8px;top:8px;z-index:22;
-            display:flex;align-items:center;gap:5px;
-            background:rgba(0,0,0,.48);border:1px solid rgba(255,255,255,.22);
-            border-radius:7px;padding:4px 7px;
-            color:#fff;font:700 9px/1 ui-monospace,monospace;letter-spacing:.5px;
-            text-shadow:0 1px 3px rgba(0,0,0,.8);max-width:32vw;overflow:hidden}
-  #visitors img{display:block;height:16px;image-rendering:crisp-edges}
-  #visitors .dot{width:6px;height:6px;border-radius:50%;background:#2bff5a;
-                 box-shadow:0 0 6px #2bff5a;animation:pulse 2s infinite;flex-shrink:0}
-  #visitors .dot.cached{background:#ffd23f;box-shadow:0 0 6px #ffd23f;animation:none}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-
-  #goalFlash{position:fixed;top:30%;left:50%;
-             transform:translate(-50%,-50%) scale(.35);
-             font:900 min(14vw,80px)/1 ui-monospace,monospace;
-             color:#ffd23f;letter-spacing:3px;
-             text-shadow:0 0 26px #ff6b00,0 0 62px #ff3c00,0 5px 0 #8a3a00;
-             opacity:0;pointer-events:none;z-index:30;white-space:nowrap;
-             text-align:center}
-  #goalFlash.opp{color:#e8f2ff;
-                 text-shadow:0 0 26px #75AADB,0 0 62px #4a86bd,0 5px 0 #103a60}
-  #goalFlash.show{animation:goalPop 1.6s ease-out}
-  @keyframes goalPop{
-    0%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(-10deg)}
-    14%{opacity:1;transform:translate(-50%,-50%) scale(1.2) rotate(5deg)}
-    32%{transform:translate(-50%,-50%) scale(1) rotate(0)}
-    70%{opacity:1;transform:translate(-50%,-50%) scale(1)}
-    100%{opacity:0;transform:translate(-50%,-50%) scale(1.16)}}
-
-  #controls{position:fixed;inset:0;z-index:15;pointer-events:none;
-            opacity:0;transition:opacity .35s}
-  #controls.on{opacity:1}
-  #joyZoneL{position:fixed;left:0;bottom:0;width:45%;height:55%;
-            z-index:15;touch-action:none;pointer-events:auto}
-  #joyZoneR{position:fixed;right:0;bottom:0;width:45%;height:55%;
-            z-index:15;touch-action:none;pointer-events:auto}
-
-  .joyBase{position:absolute;width:130px;height:130px;border-radius:50%;
-           border:2.5px solid rgba(255,255,255,.55);
-           transform:translate(-50%,-50%);opacity:0;
-           transition:opacity .14s;pointer-events:none;
-           box-shadow:0 4px 20px rgba(0,0,0,.35)}
-  .joyBase.on{opacity:1}
-  #joyBaseL{background:radial-gradient(circle,rgba(255,255,255,.18),rgba(0,0,0,.20))}
-  #joyBaseR{background:radial-gradient(circle,rgba(150,200,255,.22),rgba(0,0,0,.22))}
-
-  .joyKnob{position:absolute;width:58px;height:58px;border-radius:50%;
-           transform:translate(-50%,-50%);opacity:0;
-           transition:opacity .14s;pointer-events:none;
-           box-shadow:0 3px 14px rgba(0,0,0,.5)}
-  .joyKnob.on{opacity:1}
-  #joyKnobL{background:radial-gradient(circle at 35% 30%,#fff,#ffb84d 70%,#e08a20)}
-  #joyKnobR{background:radial-gradient(circle at 35% 30%,#fff,#7fc0ff 70%,#2a6fd0)}
-
-  .btn{position:fixed;z-index:16;border-radius:50%;border:3px solid #fff;
-       color:#fff;font:900 15px/1 ui-monospace,monospace;letter-spacing:1px;
-       display:flex;align-items:center;justify-content:center;
-       box-shadow:0 5px 20px rgba(0,0,0,.5);touch-action:none;
-       transition:transform .07s,background .12s;
-       -webkit-user-select:none;user-select:none;pointer-events:auto}
-  .btn:active,.btn.down{transform:scale(.9)}
-  #btnKick{right:14px;bottom:calc(55% + 14px);
-           width:82px;height:82px;background:rgba(230,60,40,.94)}
-  #btnKick.hot{background:rgba(255,190,30,.96);color:#3a2400;border-color:#fff3a0}
-  #btnJump{right:calc(14px + 94px);bottom:calc(55% + 20px);
-           width:68px;height:68px;background:rgba(60,140,230,.94)}
-
-  #clubPicker{position:fixed;inset:0;z-index:100;
-              display:flex;align-items:center;justify-content:center;
-              background:linear-gradient(180deg,#7ab0e0 0%,#3a5a80 100%);
-              color:#fff;transition:opacity .4s}
-  #clubPicker.gone{opacity:0;pointer-events:none}
-  .cp-inner{text-align:center;
-            background:rgba(0,0,0,.38);
-            border:2px solid rgba(255,255,255,.22);
-            border-radius:16px;
-            padding:22px 26px 26px;
-            box-shadow:0 12px 44px rgba(0,0,0,.5);
-            max-width:94vw}
-  .cp-inner .cp-brand{display:flex;align-items:center;justify-content:center;gap:8px;
-                      color:#ffd23f;font:900 20px/1 ui-monospace,monospace;
-                      letter-spacing:3px}
-  .cp-inner h1{margin:10px 0 4px;
-               font-size:clamp(17px,4.5vw,24px);
-               letter-spacing:3px;color:#fff;
-               text-shadow:0 2px 8px rgba(0,0,0,.6)}
-  .cp-inner p{margin:0 0 20px;font-size:11px;letter-spacing:3px;opacity:.85}
-  .cp-buttons{display:flex;gap:16px;justify-content:center}
-  .cp-btn{width:120px;height:148px;border-radius:14px;
-          border:3px solid rgba(255,255,255,.72);
-          cursor:pointer;
-          display:flex;flex-direction:column;align-items:center;justify-content:center;
-          font-family:inherit;color:#fff;
-          box-shadow:0 6px 18px rgba(0,0,0,.4);
-          transition:transform .12s, box-shadow .18s;
-          touch-action:manipulation;user-select:none;-webkit-user-select:none}
-  .cp-btn:active{transform:scale(.94)}
-  .cp-btn.red{background:linear-gradient(180deg,#e63946 0%,#b91e2a 100%)}
-  .cp-btn.arg{background:repeating-linear-gradient(90deg,
-                #75AADB 0 16px, #ffffff 16px 32px);
-              color:#0a2a50;
-              text-shadow:0 1px 2px rgba(255,255,255,.6)}
-  .cp-btn .num{font-size:44px;font-weight:900;letter-spacing:1px;line-height:1}
-  .cp-btn.arg .num{color:#0a2a50}
-  .cp-btn .name{font-size:12px;font-weight:900;letter-spacing:3px;margin-top:8px}
-  .cp-hint{margin-top:18px;font-size:10px;letter-spacing:1.5px;opacity:.7;
-           min-height:14px}
-
-  #cpLoader{display:none}
-  #cpLoader.on{display:block}
-  .loadBar{margin:16px auto 0;width:220px;height:8px;border-radius:4px;
-           background:rgba(255,255,255,.18);overflow:hidden}
-  .loadBar i{display:block;height:100%;width:0%;
-             background:linear-gradient(90deg,#ffd23f,#ff8a3d);
-             transition:width .18s}
-
-  @media (max-height:480px){
-    .joyBase{width:110px;height:110px}
-    .joyKnob{width:50px;height:50px}
-    #btnKick{width:74px;height:74px}
-    #btnJump{width:62px;height:62px}
-    .cp-btn{width:104px;height:132px}
-    .cp-btn .num{font-size:38px}
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  html,body{
+    width:100%;height:100%;overflow:hidden;background:#0a0a12;
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;-webkit-user-select:none;
+    touch-action:none;
   }
+
+  /* ---- Desktop: iPhone 14 Pro frame ---- */
+  body{
+    display:flex;align-items:center;justify-content:center;min-height:100vh;
+    background:radial-gradient(ellipse at center,#1a1a2e 0%,#050508 100%);
+  }
+  #phone{
+    position:relative;
+    width:min(430px,100vw);
+    height:min(932px,100vh);
+    background:#000;
+    border-radius:min(56px,12vw);
+    overflow:hidden;
+    box-shadow:
+      0 0 0 12px #111,
+      0 0 0 15px #262626,
+      0 30px 90px rgba(0,0,0,.85),
+      0 0 0 1px rgba(255,255,255,.06) inset;
+  }
+  @media (max-width:520px),(max-height:740px){
+    body{background:#000}
+    #phone{width:100vw;height:100vh;height:100dvh;border-radius:0;box-shadow:none}
+  }
+
+  /* ---- Wallpaper ---- */
+  #wallpaper{
+    position:absolute;inset:0;
+    background:
+      radial-gradient(circle at 20% 15%,rgba(120,80,255,.35) 0%,transparent 42%),
+      radial-gradient(circle at 85% 75%,rgba(255,80,120,.28) 0%,transparent 45%),
+      radial-gradient(circle at 60% 40%,rgba(0,200,255,.20) 0%,transparent 55%),
+      linear-gradient(160deg,#0d0b1f 0%,#1a1230 45%,#08060f 100%);
+    z-index:0;
+  }
+  /* soft blobs */
+  #wallpaper::before,#wallpaper::after{
+    content:'';position:absolute;border-radius:50%;filter:blur(60px);opacity:.4;
+  }
+  #wallpaper::before{width:280px;height:280px;background:#5b3fff;top:-60px;left:-40px}
+  #wallpaper::after{width:320px;height:320px;background:#ff4f7a;bottom:-100px;right:-70px}
+
+  /* ---- Dynamic Island ---- */
+  #island{
+    position:absolute;top:11px;left:50%;transform:translateX(-50%);
+    width:124px;height:35px;background:#000;border-radius:20px;z-index:60;
+    pointer-events:none;
+    box-shadow:0 0 0 1px rgba(255,255,255,.04);
+  }
+  @media (max-width:520px),(max-height:740px){
+    #island{width:110px;height:32px;top:8px}
+  }
+
+  /* ---- Status bar ---- */
+  #statusbar{
+    position:absolute;top:0;left:0;right:0;height:52px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 26px;z-index:55;pointer-events:none;
+    color:#fff;font-size:14px;font-weight:600;letter-spacing:.2px;
+    text-shadow:0 1px 2px rgba(0,0,0,.35);
+  }
+  #statusbar .right{display:flex;align-items:center;gap:5px}
+  #statusbar svg{display:block}
+  @media (max-width:520px),(max-height:740px){
+    #statusbar{padding:0 20px;height:46px;font-size:13px}
+  }
+
+  /* ---- Home screen ---- */
+  #homescreen{
+    position:absolute;inset:0;z-index:5;
+    padding:58px 22px 34px;
+    display:flex;flex-direction:column;
+    transition:transform .45s cubic-bezier(.32,.72,0,1),opacity .3s;
+    transform-origin:50% 50%;
+  }
+  #homescreen.hidden{
+    transform:scale(1.12);opacity:0;pointer-events:none;
+  }
+
+  /* Clock widget */
+  #widget{
+    text-align:center;color:#fff;margin:14px 0 34px;
+    text-shadow:0 2px 14px rgba(0,0,0,.55);
+  }
+  #widgetDate{
+    font-size:14px;font-weight:600;letter-spacing:.4px;
+    color:rgba(255,255,255,.85);margin-bottom:2px;
+  }
+  #widgetTime{
+    font-size:76px;font-weight:200;letter-spacing:-3px;line-height:1;
+    font-variant-numeric:tabular-nums;
+  }
+  @media (max-height:740px){
+    #widget{margin:8px 0 22px}
+    #widgetTime{font-size:62px}
+  }
+
+  /* App grid */
+  #appgrid{
+    display:grid;grid-template-columns:repeat(4,1fr);
+    gap:22px 18px;flex:1;align-content:start;
+    margin-top:6px;
+  }
+  .app{
+    background:none;border:none;padding:0;font:inherit;color:inherit;
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+    cursor:pointer;-webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+    transition:transform .12s;
+  }
+  .app:active{transform:scale(.9)}
+  .app:active .icon{filter:brightness(.85)}
+
+  .icon{
+    width:60px;height:60px;border-radius:14px;
+    overflow:hidden;position:relative;
+    box-shadow:
+      0 4px 14px rgba(0,0,0,.45),
+      0 0 0 .5px rgba(255,255,255,.10) inset;
+    background:#1a1a1a;
+  }
+  .icon svg{width:100%;height:100%;display:block}
+  .app-label{
+    font-size:11px;font-weight:500;color:#fff;
+    letter-spacing:.1px;max-width:72px;text-align:center;
+    line-height:1.15;
+    text-shadow:0 1px 3px rgba(0,0,0,.9);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  @media (max-width:520px){
+    #appgrid{grid-template-columns:repeat(4,1fr);gap:20px 14px}
+    .icon{width:54px;height:54px;border-radius:13px}
+    .app-label{font-size:10px;max-width:64px}
+  }
+
+  /* Dock */
+  #dock{
+    margin-top:auto;margin-left:-22px;margin-right:-22px;margin-bottom:-10px;
+    padding:12px 22px 14px;
+    display:grid;grid-template-columns:repeat(4,1fr);
+    gap:18px;align-content:center;
+    background:rgba(30,30,45,.42);
+    backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+    border-top:.5px solid rgba(255,255,255,.12);
+    border-radius:36px 36px 0 0;
+  }
+  #dock .app{transform:translateY(0)}
+  #dock .icon{box-shadow:0 4px 12px rgba(0,0,0,.55),0 0 0 .5px rgba(255,255,255,.12) inset}
+  @media (max-width:520px){
+    #dock{gap:14px;padding:10px 18px 12px}
+  }
+
+  /* ---- App view (fullscreen iframe) ---- */
+  #appview{
+    position:absolute;inset:0;z-index:40;
+    background:#000;
+    opacity:0;transform:scale(.9);pointer-events:none;
+    transition:opacity .35s ease,transform .45s cubic-bezier(.32,.72,0,1);
+  }
+  #appview.on{opacity:1;transform:scale(1);pointer-events:auto}
+  #appview iframe{
+    width:100%;height:100%;border:0;display:block;background:#000;
+  }
+
+  /* ---- Home indicator ---- */
+  #homeindicator{
+    position:absolute;bottom:7px;left:50%;transform:translateX(-50%);
+    width:140px;height:5px;border-radius:3px;background:#fff;
+    opacity:.18;z-index:70;cursor:pointer;
+    transition:opacity .25s,background .25s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #appview.on ~ #homeindicator{opacity:.85}
+  #homeindicator:active{background:#ffd23f}
+
+  /* ---- Launch flash overlay ---- */
+  #flash{
+    position:absolute;inset:0;background:#000;z-index:65;
+    opacity:0;pointer-events:none;transition:opacity .25s;
+  }
+  #flash.on{opacity:1}
 </style>
 </head>
 <body>
 
-<div id="hud">
-  <div class="brand">
-    <svg width="16" height="16" viewBox="0 0 32 32" aria-hidden="true">
-      <rect x="1" y="1" width="30" height="30" rx="6" fill="#111" stroke="#ffd23f" stroke-width="2"/>
-      <text x="16" y="22" font-size="13" font-family="monospace" font-weight="900" fill="#ffd23f" text-anchor="middle">eph</text>
-    </svg>
-    <b>PORTHARCOURT EPH</b>
-  </div>
-  <div class="s"><span class="k">L-stick</span> move · <span class="k">R-stick</span> camera · <span class="k">SPACE</span> jump · <span class="k">F</span> kick</div>
-  <div id="stat"></div>
-</div>
+<div id="phone">
+  <div id="wallpaper"></div>
 
-<div id="scoreBar">
-  <div class="t r" id="scoreTeamLeft">RED</div>
-  <div class="v" id="scoreText">0 – 0</div>
-  <div class="t b" id="scoreTeamRight">ARG</div>
-</div>
+  <!-- Dynamic Island -->
+  <div id="island"></div>
 
-<div id="visitors" title="Total page visits (unique per device)">
-  <span class="dot" id="visitorDot"></span>
-  <span id="visitorLabel">VIS</span>
-  <span id="visitorSlot"></span>
-</div>
-
-<div id="goalFlash">SUU! GOAL!</div>
-
-<div id="controls">
-  <div id="joyZoneL">
-    <div class="joyBase" id="joyBaseL"></div>
-    <div class="joyKnob" id="joyKnobL"></div>
-  </div>
-  <div id="joyZoneR">
-    <div class="joyBase" id="joyBaseR"></div>
-    <div class="joyKnob" id="joyKnobR"></div>
-  </div>
-  <button id="btnJump" class="btn">JUMP</button>
-  <button id="btnKick" class="btn">KICK</button>
-</div>
-
-<div id="clubPicker">
-  <div class="cp-inner">
-    <div class="cp-brand">
-      <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true">
-        <rect x="1" y="1" width="30" height="30" rx="6" fill="#111" stroke="#ffd23f" stroke-width="2"/>
-        <text x="16" y="22" font-size="13" font-family="monospace" font-weight="900" fill="#ffd23f" text-anchor="middle">eph</text>
+  <!-- Status bar -->
+  <div id="statusbar">
+    <span id="statusTime">9:41</span>
+    <div class="right">
+      <!-- signal -->
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="#fff">
+        <rect x="0"  y="8" width="3" height="4" rx=".8"/>
+        <rect x="4.5" y="6" width="3" height="6" rx=".8"/>
+        <rect x="9"  y="3" width="3" height="9" rx=".8"/>
+        <rect x="13.5" y="0" width="3" height="12" rx=".8"/>
       </svg>
-      EPH
-    </div>
-
-    <div id="cpSelect">
-      <h1>PORTHARCOURT EPH</h1>
-      <p>CHOOSE YOUR CLUB</p>
-      <div class="cp-buttons">
-        <div class="cp-btn red" data-team="0">
-          <span class="num">7</span>
-          <span class="name">RED</span>
-        </div>
-        <div class="cp-btn arg" data-team="1">
-          <span class="num">7</span>
-          <span class="name">ARG</span>
-        </div>
-      </div>
-      <div class="cp-hint" id="cpHint">TAP A CLUB TO PLAY</div>
-    </div>
-
-    <div id="cpLoader">
-      <h1>BUILDING PITCH</h1>
-      <p id="cpLoadLabel">LOADING…</p>
-      <div class="loadBar"><i id="cpBar"></i></div>
+      <!-- wifi -->
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round">
+        <path d="M1 4.2C3 2.3 5.4 1.3 8 1.3s5 .9 7 2.9"/>
+        <path d="M3.4 7c1.4-1.3 3-2 4.6-2s3.2.7 4.6 2"/>
+        <path d="M5.8 9.5c.7-.6 1.4-1 2.2-1s1.5.4 2.2 1"/>
+      </svg>
+      <!-- battery -->
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none">
+        <rect x="0.5" y="0.5" width="22" height="12" rx="3.2" stroke="#fff" stroke-opacity=".55"/>
+        <rect x="2.5" y="2.5" width="15" height="8" rx="1.6" fill="#fff"/>
+        <path d="M23.6 4v5a2 2 0 0 0 0-5z" fill="#fff" fill-opacity=".55"/>
+      </svg>
     </div>
   </div>
+
+  <!-- Home screen -->
+  <div id="homescreen">
+    <div id="widget">
+      <div id="widgetDate">Monday, January 1</div>
+      <div id="widgetTime">9:41</div>
+    </div>
+
+    <div id="appgrid">
+      <!-- DOBO -->
+      <button class="app" data-app="dobo" aria-label="Launch DOBO">
+        <div class="icon">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="doboBg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#0a0a15"/>
+                <stop offset="1" stop-color="#1a0e2a"/>
+              </linearGradient>
+              <linearGradient id="doboRing" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0"  stop-color="#00d9ff"/>
+                <stop offset="55%" stop-color="#a78bfa"/>
+                <stop offset="100%" stop-color="#ff6b35"/>
+              </linearGradient>
+            </defs>
+            <rect width="100" height="100" fill="url(#doboBg)"/>
+            <ellipse cx="50" cy="52" rx="34" ry="22"
+                     fill="none" stroke="url(#doboRing)" stroke-width="8" opacity=".95"/>
+            <ellipse cx="50" cy="52" rx="34" ry="22"
+                     fill="none" stroke="url(#doboRing)" stroke-width="8"
+                     transform="rotate(58 50 52)" opacity=".55"/>
+            <ellipse cx="50" cy="52" rx="34" ry="22"
+                     fill="none" stroke="url(#doboRing)" stroke-width="8"
+                     transform="rotate(-58 50 52)" opacity=".55"/>
+            <circle cx="50" cy="52" r="5" fill="#fff" opacity=".9"/>
+          </svg>
+        </div>
+        <span class="app-label">DOBO</span>
+      </button>
+
+      <!-- Portharcourt EPH -->
+      <button class="app" data-app="eph" aria-label="Launch Portharcourt EPH">
+        <div class="icon">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="ephBg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#7ab0e0"/>
+                <stop offset="1" stop-color="#2a4a70"/>
+              </linearGradient>
+            </defs>
+            <rect width="100" height="100" fill="url(#ephBg)"/>
+            <!-- pitch stripes -->
+            <rect x="0" y="0"  width="100" height="12.5" fill="#3f8a3a"/>
+            <rect x="0" y="25" width="100" height="12.5" fill="#3f8a3a"/>
+            <rect x="0" y="50" width="100" height="12.5" fill="#3f8a3a"/>
+            <rect x="0" y="75" width="100" height="12.5" fill="#3f8a3a"/>
+            <!-- ball -->
+            <circle cx="50" cy="50" r="24" fill="#f4f2ea"/>
+            <path d="M50 26 L62 34 L58 48 L42 48 L38 34 Z" fill="#141414"/>
+            <path d="M42 48 L58 48 L64 60 L50 68 L36 60 Z" fill="#141414" opacity=".75"/>
+            <!-- eph badge -->
+            <rect x="6" y="6" width="20" height="20" rx="5" fill="#111" stroke="#ffd23f" stroke-width="2"/>
+            <text x="16" y="21" font-size="11" font-family="monospace" font-weight="900"
+                  fill="#ffd23f" text-anchor="middle">eph</text>
+          </svg>
+        </div>
+        <span class="app-label">PORTHARCOURT</span>
+      </button>
+    </div>
+
+    <!-- Dock -->
+    <div id="dock">
+      <button class="app" data-app="dobo" aria-label="DOBO from dock">
+        <div class="icon">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="doboBg2" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#0a0a15"/>
+                <stop offset="1" stop-color="#1a0e2a"/>
+              </linearGradient>
+              <linearGradient id="doboRing2" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#00d9ff"/>
+                <stop offset="1" stop-color="#ff6b35"/>
+              </linearGradient>
+            </defs>
+            <rect width="100" height="100" fill="url(#doboBg2)"/>
+            <ellipse cx="50" cy="52" rx="34" ry="22"
+                     fill="none" stroke="url(#doboRing2)" stroke-width="9"/>
+          </svg>
+        </div>
+        <span class="app-label">DOBO</span>
+      </button>
+      <button class="app" data-app="eph" aria-label="EPH from dock">
+        <div class="icon">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="ephBg2" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#7ab0e0"/>
+                <stop offset="1" stop-color="#2a4a70"/>
+              </linearGradient>
+            </defs>
+            <rect width="100" height="100" fill="url(#ephBg2)"/>
+            <rect x="0" y="0" width="100" height="10" fill="#3f8a3a"/>
+            <rect x="0" y="30" width="100" height="10" fill="#3f8a3a"/>
+            <rect x="0" y="60" width="100" height="10" fill="#3f8a3a"/>
+            <circle cx="50" cy="50" r="26" fill="#f4f2ea"/>
+            <path d="M50 24 L64 34 L58 50 L42 50 L36 34 Z" fill="#141414"/>
+          </svg>
+        </div>
+        <span class="app-label">PORTHARCOURT</span>
+      </button>
+      <div></div><div></div>
+    </div>
+  </div>
+
+  <!-- App view -->
+  <div id="appview">
+    <iframe id="gameframe" allow="autoplay; fullscreen; xr-spatial-tracking"
+            allowfullscreen></iframe>
+  </div>
+
+  <!-- Launch flash -->
+  <div id="flash"></div>
+
+  <!-- Home indicator -->
+  <div id="homeindicator" role="button" aria-label="Return home"></div>
 </div>
 
 <script>
-/* Visitor counter — localStorage gated */
-(function () {
-  const KEY   = 'eph_portharcourt_counted_v1';
-  const SLUG  = 'portharcourt-eph';
-  const URL   = 'https://api.visitorbadge.io/api/visitors' +
-                '?path=' + encodeURIComponent(SLUG) +
-                '&label=&countColor=%23ffd23f&labelColor=%23ffd23f&style=flat';
-  const slot  = document.getElementById('visitorSlot');
-  const label = document.getElementById('visitorLabel');
-  const dot   = document.getElementById('visitorDot');
+(function(){
+  'use strict';
 
-  let seen = false;
-  try { seen = !!localStorage.getItem(KEY); } catch (e) {}
+  const homescreen = document.getElementById('homescreen');
+  const appview    = document.getElementById('appview');
+  const iframe     = document.getElementById('gameframe');
+  const flash      = document.getElementById('flash');
+  const homeInd    = document.getElementById('homeindicator');
+  const statusTime = document.getElementById('statusTime');
+  const widgetTime = document.getElementById('widgetTime');
+  const widgetDate = document.getElementById('widgetDate');
 
-  const img = document.createElement('img');
-  img.src = URL;
-  img.alt = '';
-  img.addEventListener('error', () => {
-    img.remove();
-    const t = document.createElement('span');
-    t.textContent = seen ? '✓' : '–';
-    t.style.color = '#ffd23f';
-    t.style.font  = '900 13px ui-monospace,monospace';
-    slot.appendChild(t);
-  });
-  slot.appendChild(img);
+  /* ---------- Clock / date ---------- */
+  const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const MONTHS = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
 
-  if (!seen) {
-    try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {}
-  } else {
-    dot.classList.add('cached');
-    label.textContent = 'VISITED';
+  function tick(){
+    const now = new Date();
+    const h   = now.getHours();
+    const m   = String(now.getMinutes()).padStart(2,'0');
+    const hh  = h % 12 || 12;
+    const t   = hh + ':' + m;
+    statusTime.textContent = t;
+    widgetTime.textContent = t;
+    widgetDate.textContent = DAYS[now.getDay()] + ', ' +
+                             MONTHS[now.getMonth()] + ' ' + now.getDate();
   }
-})();
-</script>
+  tick();
+  setInterval(tick, 1000);
 
-<script>
-/* Club picker — plain script, fires immediately on tap.
-   Waits for the module to register window.__startGame. */
-(function () {
-  window.__pendingTeam = null;
-  window.__moduleReady = false;
-
-  function choose(team) {
-    if (window.__moduleReady && window.__startGame) {
-      window.__startGame(team);
-    } else {
-      window.__pendingTeam = team;
-      var hint = document.getElementById('cpHint');
-      if (hint) hint.textContent = 'LOADING…';
-      var btns = document.querySelectorAll('.cp-btn');
-      for (var i = 0; i < btns.length; i++) btns[i].style.pointerEvents = 'none';
-    }
-  }
-
-  document.querySelectorAll('.cp-btn').forEach(function (b) {
-    b.addEventListener('pointerdown', function (e) {
-      e.preventDefault();
-      choose(parseInt(b.dataset.team, 10) || 0);
-    }, { passive: false });
-  });
-})();
-</script>
-
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-  }
-}
-</script>
-
-<script type="module">
-import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-
-/* ============================================================================
-   0.  MATH
-   ========================================================================== */
-const TAU   = Math.PI * 2;
-const mod   = (a, n) => ((a % n) + n) % n;
-const lerp  = (a, b, t) => a + (b - a) * t;
-const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
-const smoothstep = (t) => { t = clamp(t, 0, 1); return t*t*(3 - 2*t); };
-const damp = (a, b, l, dt) => lerp(a, b, 1 - Math.exp(-l * dt));
-const shortestAngle = (from, to) => {
-  let d = to - from;
-  while (d >  Math.PI) d -= TAU;
-  while (d < -Math.PI) d += TAU;
-  return d;
-};
-const yieldFrame = () => new Promise(r => setTimeout(r, 0));
-
-let _seed = 0x1a2b3c4d;
-function rnd() { _seed = (_seed * 1664525 + 1013904223) >>> 0; return _seed / 4294967296; }
-const rr = (a, b) => a + rnd() * (b - a);
-
-const _m4 = new THREE.Matrix4();
-const _qt = new THREE.Quaternion();
-const _eu = new THREE.Euler();
-const _v3 = new THREE.Vector3();
-const _sc = new THREE.Vector3();
-
-function xform(g, x=0, y=0, z=0, rx=0, ry=0, rz=0, sx=1, sy=1, sz=1) {
-  _eu.set(rx, ry, rz); _qt.setFromEuler(_eu);
-  _v3.set(x, y, z); _sc.set(sx, sy, sz);
-  _m4.compose(_v3, _qt, _sc); g.applyMatrix4(_m4); return g;
-}
-function paint(g, hex) {
-  const c = new THREE.Color(hex), n = g.attributes.position.count;
-  const a = new Float32Array(n * 3);
-  for (let i = 0; i < n; i++) { a[i*3]=c.r; a[i*3+1]=c.g; a[i*3+2]=c.b; }
-  g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g;
-}
-function P(list) {
-  const arr = new Array(list.length);
-  for (let i = 0; i < list.length; i++) {
-    const it = list[i];
-    arr[i] = Array.isArray(it) ? paint(it[0], it[1]) : paint(it, 0xffffff);
-  }
-  const m = mergeGeometries(arr, false);
-  for (const g of arr) g.dispose();
-  return m;
-}
-const BX = (w,h,d,x,y,z,rx=0,ry=0,rz=0) => xform(new THREE.BoxGeometry(w,h,d), x,y,z,rx,ry,rz);
-const CY = (rt,rb,h,seg,x,y,z,rx=0,ry=0,rz=0) => xform(new THREE.CylinderGeometry(rt,rb,h,seg), x,y,z,rx,ry,rz);
-const SP = (r,x,y,z,seg=8) => xform(new THREE.SphereGeometry(r,seg,Math.max(4,seg-2)), x,y,z);
-
-/* ============================================================================
-   1.  RENDERER / SCENE / CAMERA
-   ========================================================================== */
-const renderer = new THREE.WebGLRenderer({
-  antialias: window.devicePixelRatio < 1.5,
-  powerPreference: 'high-performance', stencil: false
-});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.35));
-renderer.setSize(innerWidth, innerHeight);
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-document.body.appendChild(renderer.domElement);
-
-const SKY = 0xa9c9e8;
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(SKY);
-scene.fog = new THREE.Fog(SKY, 90, 380);
-
-const camera = new THREE.PerspectiveCamera(56, innerWidth/innerHeight, 0.4, 900);
-camera.position.set(-28, 12, 40);
-camera.lookAt(-28, 0, 0);
-
-scene.add(new THREE.HemisphereLight(0xcfe4ff, 0x4a4436, 1.15));
-const sun = new THREE.DirectionalLight(0xfff0d0, 1.45);
-sun.position.set(85, 130, 55); scene.add(sun);
-const fill = new THREE.DirectionalLight(0x8fb0ff, 0.30);
-fill.position.set(-70, 45, -60); scene.add(fill);
-
-renderer.render(scene, camera);
-
-/* ============================================================================
-   2.  RING PATH
-   ========================================================================== */
-class RingPath {
-  constructor(A, B, R) {
-    const a = A - R, b = B - R, hl = Math.PI * R * 0.5;
-    this.segs = [
-      { t:0, x0:-a, z0: B, dx: 1, dz: 0, len: 2*a },
-      { t:1, cx: a, cz: b, R, a0: Math.PI/2, dir:-1, len: hl },
-      { t:0, x0: A, z0: b, dx: 0, dz:-1, len: 2*b },
-      { t:1, cx: a, cz:-b, R, a0: 0,         dir:-1, len: hl },
-      { t:0, x0: a, z0:-B, dx:-1, dz: 0, len: 2*a },
-      { t:1, cx:-a, cz:-b, R, a0:-Math.PI/2, dir:-1, len: hl },
-      { t:0, x0:-A, z0:-b, dx: 0, dz: 1, len: 2*b },
-      { t:1, cx:-a, cz: b, R, a0: Math.PI,   dir:-1, len: hl }
-    ];
-    this.cum = [0]; let L = 0;
-    for (const s of this.segs) { L += s.len; this.cum.push(L); }
-    this.length = L;
-  }
-  at(s, out) {
-    out = out || {};
-    const L = this.length; s = s - Math.floor(s/L) * L;
-    const segs = this.segs, cum = this.cum;
-    let i = 0; while (i < segs.length - 1 && s >= cum[i+1]) i++;
-    const g = segs[i], u = s - cum[i];
-    if (g.t === 0) {
-      out.x = g.x0 + g.dx*u; out.z = g.z0 + g.dz*u;
-      out.tx = g.dx; out.tz = g.dz; out.k = 0;
-    } else {
-      const th = g.a0 + g.dir*(u/g.R), c = Math.cos(th), sn = Math.sin(th);
-      out.x = g.cx + g.R*c; out.z = g.cz + g.R*sn;
-      out.tx = -sn*g.dir; out.tz = c*g.dir; out.k = 1/g.R;
-    }
-    return out;
-  }
-}
-const ROAD_HALF = 6.0;
-const RING = new RingPath(60, 42, 16);
-const L = RING.length;
-const STOP_RING = [ 44, RING.cum[4] + 44 ];
-const CROSS_HALF = 140, CROSS_LEN = 2*CROSS_HALF;
-const CROSS_STOP = [ 90.5, 174.5 ];
-
-/* ============================================================================
-   3.  MATERIALS
-   ========================================================================== */
-const lam = (hex, extra={}) => new THREE.MeshLambertMaterial(
-  Object.assign({ color: 0xffffff, vertexColors: true }, extra));
-
-const MAT = {
-  vehicle : lam(0xffffff),
-  glass   : lam(0xffffff, { transparent:true, opacity:.30, depthWrite:false, side:THREE.DoubleSide }),
-  world   : lam(0xffffff, { side: THREE.DoubleSide }),
-  tire    : lam(0xffffff),
-  shadow  : new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:.22, depthWrite:false }),
-  lampRedOn  : new THREE.MeshBasicMaterial({ color:0xff2a14 }),
-  lampRedOff : new THREE.MeshBasicMaterial({ color:0x3a0f09 }),
-  lampYelOn  : new THREE.MeshBasicMaterial({ color:0xffc21a }),
-  lampYelOff : new THREE.MeshBasicMaterial({ color:0x3a2d06 }),
-  lampGrnOn  : new THREE.MeshBasicMaterial({ color:0x2bff5a }),
-  lampGrnOff : new THREE.MeshBasicMaterial({ color:0x0b3a14 })
-};
-
-/* ============================================================================
-   4.  CONSTANTS
-   ========================================================================== */
-const PITCH = { cx:-28, cz:0, w:28, h:18 };
-const PB = { minX:PITCH.cx-PITCH.w/2, maxX:PITCH.cx+PITCH.w/2,
-             minZ:PITCH.cz-PITCH.h/2, maxZ:PITCH.cz+PITCH.h/2 };
-const GOAL_W=3.2, GOAL_H=2.0, GOAL_DEPTH=1.4;
-const SCHOOL = { x:PITCH.cx, z:-20, w:20, d:8, h:6 };
-const inPitchZone  = (x,z,m=6)=> x>PB.minX-m&&x<PB.maxX+m&&z>PB.minZ-m&&z<PB.maxZ+m;
-const inSchoolZone = (x,z,m=3)=> x>SCHOOL.x-SCHOOL.w/2-m&&x<SCHOOL.x+SCHOOL.w/2+m&&
-                                 z>SCHOOL.z-SCHOOL.d/2-m&&z<SCHOOL.z+SCHOOL.d/2+m;
-
-/* ============================================================================
-   5.  STATE
-   ========================================================================== */
-let worldMesh     = null;
-let trafficLights = [];
-let LANES = [
-  { off:-4.5, dir:-1, veh:[] }, { off:-1.5, dir:-1, veh:[] },
-  { off: 1.5, dir: 1, veh:[] }, { off: 4.5, dir: 1, veh:[] }
-];
-let CROSS_LANES = [ { x:-2.5, dir: 1, veh:[] }, { x: 2.5, dir:-1, veh:[] } ];
-const TEMPLATES = {};
-const wheelCache = new Map();
-const vendorGroups = [];
-const SHADOW_GEO = new THREE.CircleGeometry(1, 10).rotateX(-Math.PI/2);
-
-/* ============================================================================
-   6.  WORLD BUILD
-   ========================================================================== */
-function stripGeo(path, offA, yA, offB, yB, N) {
-  const pos=[], nor=[], uv=[], idx=[], p={};
-  for (let i=0; i<=N; i++) {
-    const s = (i/N)*path.length; path.at(s, p);
-    const rx=-p.tz, rz=p.tx;
-    const ax=p.x+rx*offA, az=p.z+rz*offA;
-    const bx=p.x+rx*offB, bz=p.z+rz*offB;
-    pos.push(ax,yA,az, bx,yB,bz);
-    const dxv=bx-ax, dyv=yB-yA, dzv=bz-az;
-    let nx=dyv*p.tz, ny=dzv*p.tx-dxv*p.tz, nz=-dyv*p.tx;
-    const nl=Math.hypot(nx,ny,nz)||1;
-    nor.push(nx/nl,ny/nl,nz/nl, nx/nl,ny/nl,nz/nl);
-    uv.push(0,i/N, 1,i/N);
-  }
-  for (let i=0;i<N;i++){const a=i*2; idx.push(a,a+1,a+2, a+1,a+3,a+2);}
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
-  g.setAttribute('normal',   new THREE.Float32BufferAttribute(nor,3));
-  g.setAttribute('uv',       new THREE.Float32BufferAttribute(uv,2));
-  g.setIndex(idx); return g;
-}
-
-function buildWorld() {
-  const worldParts = [];
-  const W = (g, c) => worldParts.push([g, c]);
-
-  W(xform(new THREE.PlaneGeometry(800, 800).rotateX(-Math.PI/2), 0, -0.08, 0), 0x6f7a4e);
-
-  const NSEG = 140;
-  W(stripGeo(RING,-ROAD_HALF,0.020, ROAD_HALF,0.020,NSEG), 0x2f3033);
-  W(stripGeo(RING, ROAD_HALF,0.020, ROAD_HALF,0.16,NSEG), 0x9a9a92);
-  W(stripGeo(RING, ROAD_HALF,0.160, 10.0,0.160,NSEG), 0xa8a89e);
-  W(stripGeo(RING,-ROAD_HALF,0.160,-ROAD_HALF,0.020,NSEG), 0x9a9a92);
-  W(stripGeo(RING,-10.0,0.160,-ROAD_HALF,0.160,NSEG), 0xa8a89e);
-
-  {
-    const W2=5.0;
-    W(xform(new THREE.PlaneGeometry(W2*2, CROSS_HALF*2).rotateX(-Math.PI/2), 0,0.012,0), 0x2f3033);
-    const walk = new THREE.BoxGeometry(3,0.16,CROSS_HALF*2);
-    W(xform(walk.clone(), -W2-1.5, 0.08, 0), 0xa8a89e);
-    W(xform(walk.clone(),  W2+1.5, 0.08, 0), 0xa8a89e);
-  }
-  W(stripGeo(RING,-0.22,0.030,-0.10,0.030,NSEG), 0xd9b32a);
-  W(stripGeo(RING, 0.10,0.030, 0.22,0.030,NSEG), 0xd9b32a);
-
-  for (let s = 0; s < L; s += 14) {
-    const p = RING.at(s), rx=-p.tz, rz=p.tx, ry=Math.atan2(p.tx,p.tz);
-    for (const off of [-3,3])
-      W(xform(new THREE.BoxGeometry(0.16,0.02,3.4), p.x+rx*off, 0.030, p.z+rz*off, 0,ry,0), 0xdedbcc);
-  }
-  for (let z=-CROSS_HALF; z<CROSS_HALF; z+=14)
-    W(xform(new THREE.BoxGeometry(0.16,0.02,3.4), 0,0.030,z), 0xdedbcc);
-
-  {
-    const pal = [0x8d8577,0x9a8f7e,0x7d7a73,0xa39684,0x6f6a63,0xb0a48f];
-    const inRing  = (x,z)=> Math.abs(x)<76&&Math.abs(z)<58;
-    const onCross = (x)=> Math.abs(x)<12;
-    for (let gx=-160; gx<=160; gx+=34)
-      for (let gz=-140; gz<=140; gz+=34) {
-        const x=gx+rr(-5,5), z=gz+rr(-5,5);
-        if (inRing(x,z)||onCross(x)) continue;
-        if (inPitchZone(x,z,10)||inSchoolZone(x,z,6)) continue;
-        if (rnd()<0.25) continue;
-        const w=rr(9,19), d=rr(9,19), h=rr(7,30);
-        const col = pal[(rnd()*pal.length)|0];
-        W(xform(new THREE.BoxGeometry(w,h,d), x,h/2,z, 0,rr(-0.25,0.25),0), col);
-        W(xform(new THREE.BoxGeometry(w*1.05,0.7,d*1.05), x,h+0.35,z), 0x5b5750);
-        if (rnd()<0.5)
-          W(xform(new THREE.BoxGeometry(rr(2.5,4.5),2.2,rr(2.5,4.5)),
-                  x+rr(-w*0.25,w*0.25), h+1.5, z+rr(-d*0.25,d*0.25)), 0x8a6b4a);
-      }
-  }
-
-  for (let i = 0; i < 25; i++) {
-    const s=rnd()*L, side=rnd()<0.5?1:-1;
-    const p=RING.at(s), rx=-p.tz, rz=p.tx;
-    const d=side*rr(12,20);
-    const x=p.x+rx*d, z=p.z+rz*d;
-    if (inPitchZone(x,z,4)||inSchoolZone(x,z,3)) continue;
-    const h=rr(5,9);
-    W(xform(new THREE.CylinderGeometry(0.20,0.32,h,5), x,h/2,z), 0x6b5340);
-    for (let f=0; f<4; f++) {
-      const a=(f/4)*TAU+rnd();
-      W(xform(new THREE.ConeGeometry(0.55,3.2,3),
-              x+Math.cos(a)*0.9, h+0.5, z+Math.sin(a)*0.9,
-              Math.cos(a)*1.15, 0, -Math.sin(a)*1.15), 0x3f7d3a);
-    }
-  }
-
-  {
-    const B = PB;
-    const NSTRIPE = 8, sw = PITCH.w / NSTRIPE;
-    for (let i=0; i<NSTRIPE; i++) {
-      const col = (i%2===0) ? 0x3f8a3a : 0x357a32;
-      W(xform(new THREE.BoxGeometry(sw, 0.12, PITCH.h),
-              B.minX + sw*(i+0.5), -0.04, PITCH.cz), col);
-    }
-    const LW=0.12, LY=0.027;
-    W(xform(new THREE.BoxGeometry(PITCH.w,0.012,LW), PITCH.cx,LY,B.minZ), 0xffffff);
-    W(xform(new THREE.BoxGeometry(PITCH.w,0.012,LW), PITCH.cx,LY,B.maxZ), 0xffffff);
-    W(xform(new THREE.BoxGeometry(LW,0.012,PITCH.h), B.minX,LY,PITCH.cz), 0xffffff);
-    W(xform(new THREE.BoxGeometry(LW,0.012,PITCH.h), B.maxX,LY,PITCH.cz), 0xffffff);
-    W(xform(new THREE.BoxGeometry(LW,0.012,PITCH.h), PITCH.cx,LY,PITCH.cz), 0xffffff);
-    W(xform(new THREE.TorusGeometry(3.0,LW*0.55,4,20), PITCH.cx,LY,PITCH.cz, -Math.PI/2,0,0), 0xffffff);
-    W(xform(new THREE.CylinderGeometry(0.13,0.13,0.014,6), PITCH.cx,LY,PITCH.cz), 0xffffff);
-
-    const FH=0.85, PR=0.045, SP2=2.5;
-    const gz0 = PITCH.cz - GOAL_W/2 - 0.35;
-    const gz1 = PITCH.cz + GOAL_W/2 + 0.35;
-    const fenceSeg = (x0,z0,x1,z1) => {
-      const dx=x1-x0, dz=z1-z0, len=Math.hypot(dx,dz);
-      if (len<0.01) return;
-      const n = Math.max(1, Math.round(len/SP2));
-      for (let i=0;i<=n;i++) {
-        const t=i/n;
-        W(xform(new THREE.CylinderGeometry(PR,PR,FH,5),
-                x0+dx*t, FH/2, z0+dz*t), 0x9a9a92);
-      }
-      const ry = Math.atan2(dx,dz);
-      for (const yy of [0.32, 0.74])
-        W(xform(new THREE.BoxGeometry(0.05,0.05,len),
-                (x0+x1)/2, yy, (z0+z1)/2, 0,ry,0), 0x9a9a92);
-    };
-    fenceSeg(B.minX,B.minZ, B.minX,gz0);
-    fenceSeg(B.minX,gz1,   B.minX,B.maxZ);
-    fenceSeg(B.maxX,B.minZ, B.maxX,gz0);
-    fenceSeg(B.maxX,gz1,   B.maxX,B.maxZ);
-    fenceSeg(B.minX,B.minZ, B.maxX,B.minZ);
-    fenceSeg(B.minX,B.maxZ, B.maxX,B.maxZ);
-
-    const addGoal = (gx, colr) => {
-      const pr=0.07;
-      W(xform(new THREE.CylinderGeometry(pr,pr,GOAL_H,6), gx, GOAL_H/2, PITCH.cz-GOAL_W/2), colr);
-      W(xform(new THREE.CylinderGeometry(pr,pr,GOAL_H,6), gx, GOAL_H/2, PITCH.cz+GOAL_W/2), colr);
-      W(xform(new THREE.CylinderGeometry(pr,pr,GOAL_W+pr*2,6), gx, GOAL_H, PITCH.cz, 0,0,Math.PI/2), colr);
-    };
-    addGoal(B.minX, 0xd8483a);
-    addGoal(B.maxX, 0x75AADB);
-
-    const s = SCHOOL;
-    W(xform(new THREE.BoxGeometry(s.w,s.h,s.d), s.x, s.h/2, s.z), 0xe6d9bd);
-    W(xform(new THREE.BoxGeometry(s.w+0.8,0.45,s.d+0.8), s.x, s.h+0.22, s.z), 0x8a4a3a);
-    for (let i=0;i<5;i++) {
-      const wx = s.x-s.w/2+2.5+i*3.5;
-      W(xform(new THREE.BoxGeometry(1.35,1.55,0.10), wx, 3.4, s.z+s.d/2+0.05), 0x3a5a7a);
-    }
-    W(xform(new THREE.BoxGeometry(1.7,2.7,0.12), s.x-6.2, 1.35, s.z+s.d/2+0.06), 0x5a3a2a);
-  }
-
-  const geo = P(worldParts);
-  worldMesh = new THREE.Mesh(geo, MAT.world);
-  worldMesh.frustumCulled = false;
-  scene.add(worldMesh);
-  worldParts.length = 0;
-
-  const makeNet = (gx) => {
-    const backX = gx===PB.minX ? gx-GOAL_DEPTH : gx+GOAL_DEPTH;
-    const z0 = PITCH.cz-GOAL_W/2, z1 = PITCH.cz+GOAL_W/2;
-    const pos=[], NZ=6, NY=3;
-    for (let i=0;i<=NZ;i++){const z=z0+(z1-z0)*i/NZ; pos.push(backX,0,z, backX,GOAL_H,z);}
-    for (let j=0;j<=NY;j++){const y=GOAL_H*j/NY; pos.push(backX,y,z0, backX,y,z1);}
-    for (const zz of [z0,z1]) for (let j=0;j<=NY;j++) {
-      const y = GOAL_H*j/NY; pos.push(gx,y,zz, backX,y,zz);
-    }
-    for (let i=0;i<=NZ;i++){const z=z0+(z1-z0)*i/NZ; pos.push(gx,GOAL_H,z, backX,GOAL_H,z);}
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
-    return new THREE.LineSegments(g, new THREE.LineBasicMaterial({
-      color:0xd8d8d8, transparent:true, opacity:0.6 }));
-  };
-  scene.add(makeNet(PB.minX));
-  scene.add(makeNet(PB.maxX));
-}
-
-/* ============================================================================
-   7.  TRAFFIC LIGHTS
-   ========================================================================== */
-const LAMP_GEO = new THREE.CircleGeometry(0.17, 10);
-function makeTrafficLight() {
-  const g = new THREE.Group();
-  const housing = P([
-    [xform(new THREE.CylinderGeometry(0.09,0.13,5.6,6),0,2.8,0), 0x2b2f33],
-    [xform(new THREE.BoxGeometry(0.34,0.24,0.34),0,0.12,0), 0x3a3f44],
-    [xform(new THREE.BoxGeometry(0.46,1.55,0.36),0,5.92,0), 0x1b1e20]
-  ]);
-  g.add(new THREE.Mesh(housing, MAT.world));
-  const mk = (y)=>{const m=new THREE.Mesh(LAMP_GEO, MAT.lampRedOff); m.position.set(0,y,0.19); g.add(m); return m;};
-  return { group:g, red:mk(6.44), yel:mk(5.92), grn:mk(5.40) };
-}
-const TL_LAYOUT = [
-  {x: 8.5,z: 51,ry:-Math.PI/2},{x:-8.5,z: 33,ry: Math.PI/2},
-  {x:-8.5,z: 51,ry: Math.PI},  {x: 8.5,z: 33,ry: 0},
-  {x:-8.5,z:-51,ry: Math.PI/2},{x: 8.5,z:-33,ry:-Math.PI/2},
-  {x: 8.5,z:-51,ry: Math.PI},  {x:-8.5,z:-33,ry: 0}
-];
-function buildTrafficLights() {
-  for (const cfg of TL_LAYOUT) {
-    const tl = makeTrafficLight();
-    tl.group.position.set(cfg.x, 0, cfg.z);
-    tl.group.rotation.y = cfg.ry;
-    scene.add(tl.group);
-    trafficLights.push(tl);
-  }
-}
-const CYCLE = 28;
-function lightState(t) {
-  const u = t % CYCLE;
-  if (u < 11) return 0; if (u < 13) return 1; if (u < 14) return 2;
-  if (u < 25) return 3; if (u < 27) return 4; return 2;
-}
-const ringStopOf  = (st)=> st >= 2;
-const crossStopOf = (st)=> st <= 2;
-function paintLights(st) {
-  const rg=st===0, ry=st===1, cg=st===3, cy=st===4;
-  for (let i=0;i<trafficLights.length;i++) {
-    const tl = trafficLights[i];
-    const isRing = (i===0||i===1||i===4||i===5);
-    const g = isRing ? rg : cg, y = isRing ? ry : cy;
-    tl.grn.material = g ? MAT.lampGrnOn : MAT.lampGrnOff;
-    tl.yel.material = y ? MAT.lampYelOn : MAT.lampYelOff;
-    tl.red.material = (!g && !y) ? MAT.lampRedOn : MAT.lampRedOff;
-  }
-}
-
-/* ============================================================================
-   8.  VEHICLES
-   ========================================================================== */
-function wheelGeo(r, w) {
-  const key = r+'|'+w;
-  let g = wheelCache.get(key);
-  if (g) return g;
-  const list = [
-    [CY(r,r,w,10,0,0,0,0,0,Math.PI/2), 0x1b1b1b],
-    [CY(r*0.46,r*0.46,w*1.02,8,0,0,0,0,0,Math.PI/2), 0xb9b9b9]
-  ];
-  for (let i=0;i<3;i++) list.push([BX(w*1.30, r*1.55, 0.07, 0,0,0, i*Math.PI/3,0,0), 0xdcdcdc]);
-  g = P(list); wheelCache.set(key, g); return g;
-}
-function buildGroup(spec) {
-  const g = new THREE.Group();
-  for (const key in spec) {
-    if (!spec[key].length) continue;
-    g.add(new THREE.Mesh(P(spec[key]), MAT[key==='glass'?'glass':'vehicle']));
-  }
-  return g;
-}
-
-const DANFO_SPEC = (() => {
-  const YEL=0xf2c31a, BLK=0x141414, GLSC=0xa9c8e0, INT=0x4a4f55, SEAT=0x6b4b34;
-  const LAMP=0xfff6cf, RED=0xd42b1c;
-  const s = { vehicle:[], glass:[] };
-  const V = (g,c)=> s.vehicle.push([g,c]);
-  V(BX(2.10,0.92,5.55, 0,0.96,0), YEL);
-  V(BX(2.15,0.22,5.62, 0,1.24,0), BLK);
-  V(BX(2.15,0.13,5.62, 0,0.56,0), BLK);
-  V(BX(2.08,0.12,5.55, 0,2.48,0), YEL);
-  for (const sx of [-1,1]) {
-    V(BX(0.13,1.06,0.13, sx*0.99,1.95, 2.70), YEL);
-    V(BX(0.13,1.06,0.13, sx*0.99,1.95,-2.70), YEL);
-    V(BX(0.13,1.06,0.13, sx*0.99,1.95,-1.35), YEL);
-    V(BX(0.13,1.06,0.13, sx*0.99,1.95, 1.35), YEL);
-    V(BX(0.11,0.09,5.55, sx*0.99,1.45,0), YEL);
-    V(BX(0.11,0.10,5.55, sx*0.99,2.43,0), YEL);
-  }
-  s.glass.push([BX(0.06,0.96,5.50,  1.00,1.95,0), GLSC]);
-  s.glass.push([BX(0.06,0.96,5.50, -1.00,1.95,0), GLSC]);
-  s.glass.push([BX(1.88,0.96,0.06, 0,1.95, 2.74), GLSC]);
-  s.glass.push([BX(1.88,0.88,0.06, 0,1.92,-2.74), GLSC]);
-  V(BX(2.15,0.26,0.20, 0,0.62, 2.86), BLK);
-  V(BX(2.15,0.26,0.20, 0,0.62,-2.86), BLK);
-  V(BX(1.55,0.28,0.08, 0,1.00, 2.80), BLK);
-  V(BX(0.34,0.20,0.08,  0.72,0.98, 2.84), LAMP);
-  V(BX(0.34,0.20,0.08, -0.72,0.98, 2.84), LAMP);
-  V(BX(0.26,0.18,0.06,  0.80,1.02,-2.84), RED);
-  V(BX(0.26,0.18,0.06, -0.80,1.02,-2.84), RED);
-  V(BX(1.55,0.07,4.20, 0,2.58,-0.20), BLK);
-  V(BX(1.88,0.06,5.00, 0,1.44,0), INT);
-  V(BX(0.44,0.46,4.30,  0.62,1.69,-0.25), SEAT);
-  V(BX(0.44,0.46,4.30, -0.62,1.69,-0.25), SEAT);
-  V(BX(0.10,0.55,4.30,  0.86,1.94,-0.25), SEAT);
-  V(BX(0.10,0.55,4.30, -0.86,1.94,-0.25), SEAT);
-  V(BX(0.52,0.52,0.52, -0.55,1.74,2.05), INT);
-  V(BX(1.85,0.14,0.36, 0,1.62,2.56), BLK);
-  return s;
-})();
-
-const KEKE_SPEC = (() => {
-  const YEL=0xe8b41c, BLK=0x151515, INT=0x3f4348, SEAT=0x5d4130;
-  const LAMP=0xfff4c8, MET=0x9aa0a6, CAN=0x2f8f5b;
-  const s = { vehicle:[] };
-  const V = (g,c)=> s.vehicle.push([g,c]);
-  V(BX(1.35,0.64,1.55, 0,0.74,-0.50), YEL);
-  V(BX(0.78,0.56,0.92, 0,0.74, 0.86), YEL);
-  V(BX(1.22,0.08,2.30, 0,0.42,-0.05), INT);
-  V(BX(1.48,0.10,2.35, 0,1.84,-0.12), CAN);
-  for (const sx of [-1,1]) {
-    V(BX(0.07,0.98,0.07, sx*0.66,1.34, 1.02), MET);
-    V(BX(0.07,0.98,0.07, sx*0.66,1.34,-1.16), MET);
-  }
-  V(BX(0.95,0.32,0.48, 0,0.86,-0.72), SEAT);
-  V(BX(0.60,0.40,0.44, 0,0.78, 0.40), INT);
-  V(BX(0.24,0.20,0.09, 0,0.98,1.30), LAMP);
-  V(BX(1.42,0.20,0.16, 0,0.48,-1.30), BLK);
-  return s;
-})();
-
-const OKADA_SPEC = (() => {
-  const BLK=0x141414, MET=0x9aa0a6, RED=0xc0392b;
-  const SHIRT=0x2f7d4f, LAMP=0xfff4c8;
-  const s = { vehicle:[] };
-  const V = (g,c)=> s.vehicle.push([g,c]);
-  V(BX(0.16,0.16,1.50, 0,0.62,0), 0x2c2c2c);
-  V(BX(0.34,0.36,0.44, 0,0.60,0.14), MET);
-  V(BX(0.30,0.26,0.56, 0,0.88,0.24), RED);
-  V(BX(0.34,0.12,0.62, 0,0.90,-0.30), BLK);
-  V(CY(0.026,0.026,0.64,5, 0,1.04,0.56, 0,0,Math.PI/2), MET);
-  V(CY(0.11,0.11,0.09,6, 0,1.00,0.70, Math.PI/2,0,0), LAMP);
-  V(BX(0.36,0.54,0.30, 0,1.24,-0.22), SHIRT);
-  V(SP(0.145, 0,1.62,-0.20, 6), BLK);
-  V(BX(0.10,0.10,0.58,  0.20,1.30,0.03, -0.55,0,0), SHIRT);
-  V(BX(0.10,0.10,0.58, -0.20,1.30,0.03, -0.55,0,0), SHIRT);
-  V(BX(0.13,0.44,0.17,  0.15,0.80,-0.30), 0x2b2b33);
-  V(BX(0.13,0.44,0.17, -0.15,0.80,-0.30), 0x2b2b33);
-  return s;
-})();
-
-const TYPES = {
-  danfo: { len:5.60, v0:13.5, aMax:1.60, wheelR:0.46, wheelW:0.30,
-           wheels:[[-0.98,0.46,1.85],[0.98,0.46,1.85],[-0.98,0.46,-1.85],[0.98,0.46,-1.85]],
-           shadow:[1.5,3.4] },
-  keke : { len:2.75, v0:8.5, aMax:1.20, wheelR:0.29, wheelW:0.22,
-           wheels:[[0,0.29,1.14],[-0.58,0.31,-0.76],[0.58,0.31,-0.76]],
-           shadow:[0.9,1.7] },
-  okada: { len:2.05, v0:11.5, aMax:1.90, wheelR:0.33, wheelW:0.14,
-           wheels:[[0,0.33,0.68],[0,0.33,-0.68]],
-           shadow:[0.55,1.0] }
-};
-
-class RingVehicle {
-  constructor(type, lane, p) {
-    const T = TYPES[type];
-    this.type=type; this.lane=lane; this.dir=lane.dir; this.off=lane.off;
-    this.p=p; this.spd=T.v0*0.55; this.v0=T.v0; this.aMax=T.aMax;
-    this.len=T.len; this.acc=0; this.wheelR=T.wheelR;
-    this.weavePhase=rnd()*TAU; this.lean=0;
-    this.obj = TEMPLATES[type].clone(true);
-    this.wheels = [];
-    const wg = wheelGeo(T.wheelR, T.wheelW);
-    for (const [wx,wy,wz] of T.wheels) {
-      const w = new THREE.Mesh(wg, MAT.tire);
-      w.position.set(wx,wy,wz); this.obj.add(w); this.wheels.push(w);
-    }
-    const sh = new THREE.Mesh(SHADOW_GEO, MAT.shadow);
-    sh.scale.set(T.shadow[0],1,T.shadow[1]); sh.position.y=0.045;
-    this.obj.add(sh);
-    scene.add(this.obj);
-  }
-  get s() { return this.dir>0 ? mod(this.p,L) : mod(-this.p,L); }
-}
-class CrossVehicle {
-  constructor(type, lane, p) {
-    const T = TYPES[type];
-    this.type=type; this.lane=lane; this.dir=lane.dir; this.p=p;
-    this.spd=T.v0*0.5; this.v0=T.v0; this.aMax=T.aMax;
-    this.len=T.len; this.acc=0; this.wheelR=T.wheelR;
-    this.obj = TEMPLATES[type].clone(true);
-    this.wheels = [];
-    const wg = wheelGeo(T.wheelR, T.wheelW);
-    for (const [wx,wy,wz] of T.wheels) {
-      const w = new THREE.Mesh(wg, MAT.tire);
-      w.position.set(wx,wy,wz); this.obj.add(w); this.wheels.push(w);
-    }
-    const sh = new THREE.Mesh(SHADOW_GEO, MAT.shadow);
-    sh.scale.set(T.shadow[0],1,T.shadow[1]); sh.position.y=0.045;
-    this.obj.add(sh);
-    scene.add(this.obj);
-  }
-}
-
-function buildVehicles() {
-  TEMPLATES.danfo = buildGroup(DANFO_SPEC);
-  TEMPLATES.keke  = buildGroup(KEKE_SPEC);
-  TEMPLATES.okada = buildGroup(OKADA_SPEC);
-  const mix = ['danfo','danfo','keke','okada'];
-  for (const lane of LANES) {
-    const n = 3, spacing = L/n;
-    for (let i=0;i<n;i++) {
-      const type = mix[(rnd()*mix.length)|0];
-      const p0 = i*spacing + rr(-0.22,0.22)*spacing;
-      const P0 = lane.dir>0 ? mod(p0,L) : mod(-p0,L);
-      lane.veh.push(new RingVehicle(type, lane, P0));
-    }
-  }
-  for (const lane of CROSS_LANES)
-    for (let i=0;i<2;i++) {
-      const type = rnd()<0.5 ? 'danfo' : 'keke';
-      lane.veh.push(new CrossVehicle(type, lane, i*(CROSS_LEN/2)+rr(-14,14)));
-    }
-}
-
-/* ============================================================================
-   9.  VENDORS
-   ========================================================================== */
-function buildVendor(kind) {
-  const G = [];
-  const box  = (w,h,d,x,y,z,c,rx=0,ry=0,rz=0)=>G.push([xform(new THREE.BoxGeometry(w,h,d),x,y,z,rx,ry,rz),c]);
-  const cyl  = (rt,rb,h,seg,x,y,z,c,rx=0,ry=0,rz=0)=>G.push([xform(new THREE.CylinderGeometry(rt,rb,h,seg),x,y,z,rx,ry,rz),c]);
-  const cone = (r,h,seg,x,y,z,c)=>G.push([xform(new THREE.ConeGeometry(r,h,seg),x,y,z),c]);
-  const sph  = (r,x,y,z,c)=>G.push([xform(new THREE.SphereGeometry(r,6,4),x,y,z),c]);
-  const WOOD=0x8a6a42, MET=0x9aa0a6, SKIN=0x6b4a33, DARK=0x2b2b33;
-  const UMB = [0xd0392b,0x2f8f5b,0xe0a41c,0x2b6fd0][(rnd()*4)|0];
-  const SH  = [0x2f7d4f,0xc0392b,0x2b6fd0,0xe0a41c][(rnd()*4)|0];
-  box(1.55,0.08,0.82, 0,0.80,0, WOOD);
-  for (const sx of [-1,1]) for (const sz of [-1,1])
-    box(0.08,0.80,0.08, sx*0.70,0.40, sz*0.33, WOOD);
-  cyl(0.035,0.035,2.30,5, 0,1.60,-0.42, MET);
-  cone(1.30,0.55,6, 0,2.92,-0.42, UMB);
-  box(0.36,0.82,0.28, 0,0.41,-1.02, DARK);
-  box(0.46,0.62,0.30, 0,1.10,-1.02, SH);
-  sph(0.145, 0,1.56,-1.02, SKIN);
-  box(0.11,0.50,0.11,  0.30,1.18,-0.86, SH);
-  box(0.11,0.50,0.11, -0.30,1.18,-0.86, SH);
-  if (kind === 'suya') {
-    box(1.00,0.10,0.50, 0,0.88,0, 0x2a2a2a);
-    box(1.00,0.06,0.50, 0,0.86,0, 0x8a2a12);
-  } else if (kind === 'akara') {
-    cyl(0.36,0.34,0.14,10, 0,0.90,0, 0x30302f);
-    cyl(0.30,0.30,0.04,10, 0,0.96,0, 0x9a6a20);
-    for (let i=0;i<4;i++) sph(0.07, rr(-0.2,0.2),0.98, rr(-0.2,0.2), 0xc99a3a);
-  } else if (kind === 'corn') {
-    box(0.90,0.08,0.55, 0,0.86,0, 0x2a2a2a);
-    for (let i=0;i<5;i++)
-      cyl(0.055,0.055,0.42,5, rr(-0.36,0.36),0.94, rr(-0.16,0.16), 0xe0c040, 0,0,Math.PI/2);
-  } else {
-    for (let s=0;s<2;s++) for (let i=0;i<4;i++)
-      box(0.20,0.09,0.26, -0.45+i*0.30, 0.87+s*0.10, s*0.16-0.16, 0xbfe3f0);
-  }
-  return new THREE.Mesh(P(G), MAT.vehicle);
-}
-function buildVendors() {
-  const kinds = ['suya','akara','corn','pure'];
-  for (let i=0;i<8;i++) {
-    const s = (i/8)*L + rr(-8,8);
-    const side = rnd()<0.62 ? 1 : -1;
-    const p = RING.at(s), rx=-p.tz, rz=p.tx;
-    const d = side*rr(11.5,14.5);
-    const x = p.x+rx*d, z = p.z+rz*d;
-    if (inPitchZone(x,z,3) || inSchoolZone(x,z,3)) continue;
-    const ry = Math.atan2(-rx*side, -rz*side) + rr(-0.35,0.35);
-    const mesh = buildVendor(kinds[(rnd()*kinds.length)|0]);
-    mesh.position.set(x, 0.16, z);
-    mesh.rotation.y = ry;
-    mesh.userData.phase = rnd()*TAU;
-    mesh.userData.baseY = 0.16;
-    scene.add(mesh); vendorGroups.push(mesh);
-  }
-}
-
-/* ============================================================================
-   10.  TRAFFIC SIM
-   ========================================================================== */
-function idm(v, gap, dv) {
-  const s0=2.0, T=1.15, b=2.4, a=v.aMax;
-  if (gap < 0.10) gap = 0.10;
-  const sStar = s0 + Math.max(0, v.spd*T + (v.spd*dv)/(2*Math.sqrt(a*b)));
-  const free  = 1 - Math.pow(Math.min(v.spd/v.v0, 2.5), 4);
-  return a * (free - (sStar*sStar)/(gap*gap));
-}
-const _p = {};
-function updateRingTraffic(dt, st) {
-  const stop = ringStopOf(st);
-  for (const lane of LANES) {
-    const vs = lane.veh, n = vs.length; if (!n) continue;
-    vs.sort((a,b)=>a.p-b.p);
-    const stopP = lane.dir>0 ? [mod(STOP_RING[0],L), mod(STOP_RING[1],L)]
-                             : [mod(-STOP_RING[0],L), mod(-STOP_RING[1],L)];
-    for (let i=0;i<n;i++) {
-      const v = vs[i];
-      let a = v.aMax*(1 - Math.pow(Math.min(v.spd/v.v0,2.5),4));
-      const lead = vs[(i+1)%n];
-      const leadP = (i+1<n) ? lead.p : lead.p+L;
-      const gap = leadP - v.p - (v.len+lead.len)*0.5;
-      a = Math.min(a, idm(v, gap, v.spd-lead.spd));
-      if (stop) for (let k=0;k<2;k++) {
-        const d = mod(stopP[k]-v.p, L);
-        if (d < 65) a = Math.min(a, idm(v, d - v.len*0.5, v.spd));
-      }
-      v.acc = clamp(a, -7.5, v.aMax);
-    }
-    for (const v of vs) {
-      v.spd = Math.max(0, v.spd + v.acc*dt);
-      if (v.spd > v.v0*1.30) v.spd = v.v0*1.30;
-      v.p += v.spd*dt;
-    }
-  }
-}
-function updateCrossTraffic(dt, st) {
-  const stop = crossStopOf(st);
-  for (const lane of CROSS_LANES) {
-    const vs = lane.veh, n = vs.length; if (!n) continue;
-    vs.sort((a,b)=>a.p-b.p);
-    for (let i=0;i<n;i++) {
-      const v = vs[i];
-      let a = v.aMax*(1 - Math.pow(Math.min(v.spd/v.v0,2.5),4));
-      const lead = vs[(i+1)%n];
-      const leadP = (i+1<n) ? lead.p : lead.p+CROSS_LEN;
-      const gap = leadP - v.p - (v.len+lead.len)*0.5;
-      a = Math.min(a, idm(v, gap, v.spd-lead.spd));
-      if (stop) for (let k=0;k<2;k++) {
-        const d = mod(CROSS_STOP[k]-v.p, CROSS_LEN);
-        if (d < 70) a = Math.min(a, idm(v, d - v.len*0.5, v.spd));
-      }
-      v.acc = clamp(a, -7.5, v.aMax);
-    }
-    for (const v of vs) {
-      v.spd = Math.max(0, v.spd + v.acc*dt);
-      if (v.spd > v.v0*1.30) v.spd = v.v0*1.30;
-      v.p += v.spd*dt;
-    }
-  }
-}
-function placeRingVehicle(v, dt, t) {
-  const s = v.s; RING.at(s, _p);
-  const rx = -_p.tz, rz = _p.tx;
-  let off = v.off;
-  if (v.type === 'okada') off += Math.sin(t*1.9 + v.weavePhase)*0.75;
-  v.obj.position.set(_p.x + rx*off, 0, _p.z + rz*off);
-  const fx = _p.tx*v.dir, fz = _p.tz*v.dir;
-  const yaw = Math.atan2(fx, fz);
-  let lean = 0;
-  if (v.type === 'okada') {
-    const tg = Math.atan((v.spd*v.spd*_p.k)/(9.81*1.55));
-    lean = lerp(v.lean, tg, 1 - Math.exp(-dt*4)); v.lean = lean;
-  } else if (v.type === 'keke') {
-    const tg = Math.atan((v.spd*v.spd*_p.k)/(9.81*4.5));
-    lean = lerp(v.lean, tg, 1 - Math.exp(-dt*3)); v.lean = lean;
-  }
-  v.obj.rotation.set(0, yaw, lean);
-  const spin = (v.spd*dt)/v.wheelR;
-  for (const w of v.wheels) w.rotation.x -= spin;
-}
-function placeCrossVehicle(v, dt) {
-  const u = mod(v.p, CROSS_LEN);
-  const z = v.dir>0 ? (-CROSS_HALF+u) : (CROSS_HALF-u);
-  v.obj.position.set(v.lane.x, 0, z);
-  v.obj.rotation.set(0, v.dir>0 ? 0 : Math.PI, 0);
-  const spin = (v.spd*dt)/v.wheelR;
-  for (const w of v.wheels) w.rotation.x -= spin;
-}
-
-/* ============================================================================
-   11.  AUDIO
-   ========================================================================== */
-let audioCtx = null, noiseBuf = null;
-function ensureAudio() {
-  if (audioCtx) { if (audioCtx.state === 'suspended') audioCtx.resume(); return; }
-  try {
-    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-    const len = Math.floor(audioCtx.sampleRate * 1.2);
-    noiseBuf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
-    const d = noiseBuf.getChannelData(0);
-    for (let i=0; i<len; i++) d[i] = Math.random()*2-1;
-  } catch(e){ audioCtx = null; }
-}
-function playKick(power) {
-  if (!audioCtx || !noiseBuf) return;
-  const t = audioCtx.currentTime;
-  const osc = audioCtx.createOscillator();
-  osc.type='sine';
-  osc.frequency.setValueAtTime(190, t);
-  osc.frequency.exponentialRampToValueAtTime(52, t+0.10);
-  const g = audioCtx.createGain();
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(0.42*power, t+0.006);
-  g.gain.exponentialRampToValueAtTime(0.0001, t+0.16);
-  osc.connect(g).connect(audioCtx.destination);
-  osc.start(t); osc.stop(t+0.18);
-  const src = audioCtx.createBufferSource();
-  src.buffer = noiseBuf;
-  const bp = audioCtx.createBiquadFilter();
-  bp.type='bandpass'; bp.frequency.value=1900; bp.Q.value=0.9;
-  const ng = audioCtx.createGain();
-  ng.gain.setValueAtTime(0.28*power, t);
-  ng.gain.exponentialRampToValueAtTime(0.0001, t+0.07);
-  src.connect(bp).connect(ng).connect(audioCtx.destination);
-  src.start(t, 0, 0.09);
-}
-function playBounce(vol) {
-  if (!audioCtx) return;
-  const t = audioCtx.currentTime;
-  const osc = audioCtx.createOscillator();
-  osc.type='sine';
-  osc.frequency.setValueAtTime(130, t);
-  osc.frequency.exponentialRampToValueAtTime(58, t+0.07);
-  const g = audioCtx.createGain();
-  g.gain.setValueAtTime(0.20*vol, t);
-  g.gain.exponentialRampToValueAtTime(0.0001, t+0.10);
-  osc.connect(g).connect(audioCtx.destination);
-  osc.start(t); osc.stop(t+0.12);
-}
-function playPost() {
-  if (!audioCtx) return;
-  const t = audioCtx.currentTime;
-  const osc = audioCtx.createOscillator();
-  osc.type='triangle';
-  osc.frequency.setValueAtTime(920, t);
-  osc.frequency.exponentialRampToValueAtTime(430, t+0.32);
-  const g = audioCtx.createGain();
-  g.gain.setValueAtTime(0.24, t);
-  g.gain.exponentialRampToValueAtTime(0.0001, t+0.42);
-  osc.connect(g).connect(audioCtx.destination);
-  osc.start(t); osc.stop(t+0.45);
-}
-function playCheer() {
-  if (!audioCtx || !noiseBuf) return;
-  const t = audioCtx.currentTime, dur = 2.1;
-  const src = audioCtx.createBufferSource();
-  src.buffer = noiseBuf; src.loop = true;
-  const bp = audioCtx.createBiquadFilter();
-  bp.type='bandpass';
-  bp.frequency.setValueAtTime(620, t);
-  bp.frequency.linearRampToValueAtTime(1900, t+0.34);
-  bp.frequency.linearRampToValueAtTime(880, t+dur);
-  bp.Q.value = 1.1;
-  const g = audioCtx.createGain();
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(0.60, t+0.10);
-  g.gain.linearRampToValueAtTime(0.42, t+0.55);
-  g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
-  src.connect(bp).connect(g).connect(audioCtx.destination);
-  src.start(t); src.stop(t+dur+0.05);
-  for (let i=0; i<3; i++) {
-    const o = audioCtx.createOscillator();
-    o.type='sawtooth';
-    const bf = 290 + i*95;
-    const tt = t + i*0.055;
-    o.frequency.setValueAtTime(bf, tt);
-    o.frequency.linearRampToValueAtTime(bf*1.42, tt+0.30);
-    o.frequency.linearRampToValueAtTime(bf*0.88, tt+1.05);
-    const og = audioCtx.createGain();
-    og.gain.setValueAtTime(0.0001, t);
-    og.gain.linearRampToValueAtTime(0.045, tt+0.16);
-    og.gain.exponentialRampToValueAtTime(0.0001, t+1.35);
-    const lp = audioCtx.createBiquadFilter();
-    lp.type='lowpass'; lp.frequency.value = 1650;
-    o.connect(lp).connect(og).connect(audioCtx.destination);
-    o.start(t); o.stop(t+1.45);
-  }
-}
-
-/* ============================================================================
-   12.  TEAMS
-   ========================================================================== */
-const TEAM = { RED: 0, ARG: 1 };
-const TEAM_NAME = ['RED', 'ARG'];
-const TEAM_SCORE_GOAL = [PB.minX, PB.maxX];
-const TEAM_OWN_GOAL   = [PB.maxX, PB.minX];
-const teamScore       = [0, 0];
-
-/* ============================================================================
-   13.  TEXTURES
-   ========================================================================== */
-function roundRectPath(g, x, y, w, h, r) {
-  g.beginPath();
-  g.moveTo(x + r, y);
-  g.lineTo(x + w - r, y);
-  g.quadraticCurveTo(x + w, y, x + w, y + r);
-  g.lineTo(x + w, y + h - r);
-  g.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  g.lineTo(x + r, y + h);
-  g.quadraticCurveTo(x, y + h, x, y + h - r);
-  g.lineTo(x, y + r);
-  g.quadraticCurveTo(x, y, x + r, y);
-  g.closePath();
-}
-function makeEmoteTexture() {
-  const c = document.createElement('canvas');
-  c.width = 256; c.height = 160;
-  const g = c.getContext('2d');
-  g.fillStyle = 'rgba(255,214,64,0.96)';
-  g.strokeStyle = '#ffffff';
-  g.lineWidth = 9;
-  roundRectPath(g, 10, 10, 236, 106, 26);
-  g.fill(); g.stroke();
-  g.beginPath();
-  g.moveTo(104, 112); g.lineTo(128, 152); g.lineTo(152, 112);
-  g.closePath();
-  g.fillStyle = 'rgba(255,214,64,0.96)';
-  g.fill();
-  g.strokeStyle = '#ffffff'; g.lineWidth = 8; g.stroke();
-  g.fillStyle = 'rgba(255,214,64,0.96)';
-  g.fillRect(104, 104, 48, 12);
-  g.fillStyle = '#3a2000';
-  g.font = '900 70px ui-monospace, Menlo, Consolas, monospace';
-  g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillText('SUU!', 128, 66);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-function makeStripeTexture(c1, c2, bands) {
-  const c = document.createElement('canvas');
-  c.width = 128; c.height = 128;
-  const g = c.getContext('2d');
-  const w = c.width / bands;
-  for (let i = 0; i < bands; i++) {
-    g.fillStyle = (i % 2 === 0) ? c1 : c2;
-    g.fillRect(Math.floor(i * w), 0, Math.ceil(w) + 1, c.height);
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-function makeNumberTexture(num, fg) {
-  const c = document.createElement('canvas');
-  c.width = c.height = 128;
-  const g = c.getContext('2d');
-  g.clearRect(0, 0, 128, 128);
-  g.fillStyle = fg;
-  g.font = '900 100px ui-monospace, Menlo, Consolas, monospace';
-  g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillText(String(num), 64, 72);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-function makeLogoTexture() {
-  const c = document.createElement('canvas');
-  c.width = c.height = 128;
-  const g = c.getContext('2d');
-  g.clearRect(0, 0, 128, 128);
-  g.fillStyle = '#111';
-  roundRectPath(g, 6, 6, 116, 116, 18);
-  g.fill();
-  g.strokeStyle = '#ffd23f';
-  g.lineWidth = 6;
-  roundRectPath(g, 6, 6, 116, 116, 18);
-  g.stroke();
-  g.fillStyle = '#ffd23f';
-  g.font = '900 58px ui-monospace, Menlo, Consolas, monospace';
-  g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillText('eph', 64, 70);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
-const EMOTE_TEX      = makeEmoteTexture();
-const EMOTE_MAT      = new THREE.SpriteMaterial({
-  map: EMOTE_TEX, transparent: true, depthTest: true, depthWrite: false
-});
-const ARG_STRIPE_TEX = makeStripeTexture('#ffffff', '#75AADB', 5);
-const EPH_LOGO_TEX   = makeLogoTexture();
-
-/* ============================================================================
-   14.  CHARACTER RIG
-   ========================================================================== */
-const HIP_Y       = 0.82;
-const THIGH_LEN   = 0.38;
-const SHIN_LEN    = 0.37;
-const UPPER_ARM   = 0.26;
-const FOREARM_LEN = 0.24;
-const BODY_H      = 0.48;
-const SHOULDER_Y  = 0.46;
-const SHOULDER_X  = 0.19;
-const HIP_X       = 0.09;
-
-const GEO = {
-  torso : BX(0.34, BODY_H, 0.20, 0, BODY_H*0.5, 0),
-  neck  : CY(0.055, 0.065, 0.10, 6, 0, BODY_H + 0.04, 0),
-  head  : SP(0.135, 0, 0, 0, 8),
-  hair  : SP(0.142, 0, 0.028, -0.012, 8),
-  thigh : BX(0.115, THIGH_LEN, 0.125, 0, -THIGH_LEN*0.5, 0),
-  shin  : BX(0.100, SHIN_LEN,  0.110, 0, -SHIN_LEN*0.5, 0),
-  foot  : BX(0.115, 0.075, 0.215, 0, -0.038, 0.045),
-  uarm  : BX(0.088, UPPER_ARM, 0.088, 0, -UPPER_ARM*0.5, 0),
-  farm  : BX(0.078, FOREARM_LEN, 0.078, 0, -FOREARM_LEN*0.5, 0),
-  hand  : SP(0.052, 0, -FOREARM_LEN - 0.03, 0, 6),
-  eye   : SP(0.024, 0, 0, 0, 6),
-  mouth : new THREE.BoxGeometry(0.055, 0.014, 0.014),
-  smile : new THREE.TorusGeometry(0.040, 0.011, 4, 10, Math.PI).rotateZ(Math.PI)
-};
-const FACE_MAT = new THREE.MeshBasicMaterial({ color: 0x101010 });
-
-function buildKid(shirtC, pantsC, skinC, hairC, opts) {
-  opts = opts || {};
-  const root = new THREE.Group();
-  const hip = new THREE.Group();
-  hip.position.y = HIP_Y;
-  root.add(hip);
-
-  const addPart = (geo, col, parent) => {
-    const m = new THREE.Mesh(paint(geo.clone(), col), MAT.vehicle);
-    (parent || hip).add(m);
-    return m;
+  /* ---------- App registry ---------- */
+  const APPS = {
+    dobo: { file: 'dobo.html', title: 'DOBO' },
+    eph : { file: 'eph.html',  title: 'Portharcourt EPH' }
   };
 
-  if (opts.stripeTex) {
-    const torsoMat = new THREE.MeshLambertMaterial({
-      map: opts.stripeTex, color: 0xffffff
+  let currentApp = null;
+
+  /* ---------- Launch ---------- */
+  function launchApp(name){
+    const app = APPS[name];
+    if (!app) return;
+    if (currentApp) return;
+
+    currentApp = name;
+
+    /* Black flash for a clean transition */
+    flash.classList.add('on');
+
+    /* Point the iframe at the game */
+    iframe.src = app.file;
+
+    /* Show the app view once the flash covers the screen */
+    setTimeout(() => {
+      homescreen.classList.add('hidden');
+      appview.classList.add('on');
+      document.title = app.title;
+
+      setTimeout(() => flash.classList.remove('on'), 60);
+    }, 180);
+  }
+
+  /* ---------- Return home ---------- */
+  function goHome(){
+    if (!currentApp) return;
+    flash.classList.add('on');
+
+    setTimeout(() => {
+      appview.classList.remove('on');
+      homescreen.classList.remove('hidden');
+      document.title = 'Home';
+
+      /* Clear the iframe so the game fully unloads (frees RAM) */
+      setTimeout(() => {
+        iframe.src = 'about:blank';
+        currentApp = null;
+        flash.classList.remove('on');
+      }, 320);
+    }, 150);
+  }
+
+  /* ---------- Wire up taps ---------- */
+  document.querySelectorAll('.app').forEach(el => {
+    el.addEventListener('click', () => {
+      const name = el.dataset.app;
+      if (name) launchApp(name);
     });
-    hip.add(new THREE.Mesh(GEO.torso.clone(), torsoMat));
-  } else {
-    addPart(GEO.torso, shirtC);
-  }
-  addPart(GEO.neck, skinC);
-
-  const head = new THREE.Group();
-  head.position.y = BODY_H + 0.24;
-  hip.add(head);
-  head.add(new THREE.Mesh(paint(GEO.head.clone(), skinC), MAT.vehicle));
-  head.add(new THREE.Mesh(paint(GEO.hair.clone(), hairC), MAT.vehicle));
-
-  const eyeL = new THREE.Mesh(GEO.eye, FACE_MAT);
-  eyeL.position.set( 0.048, 0.028, 0.116);
-  head.add(eyeL);
-  const eyeR = new THREE.Mesh(GEO.eye, FACE_MAT);
-  eyeR.position.set(-0.048, 0.028, 0.116);
-  head.add(eyeR);
-
-  const mouthNeutral = new THREE.Mesh(GEO.mouth, FACE_MAT);
-  mouthNeutral.position.set(0, -0.056, 0.122);
-  head.add(mouthNeutral);
-
-  const mouthSmile = new THREE.Mesh(GEO.smile, FACE_MAT);
-  mouthSmile.position.set(0, -0.040, 0.120);
-  mouthSmile.visible = false;
-  head.add(mouthSmile);
-
-  if (opts.number) {
-    const tex = makeNumberTexture(opts.number, opts.numberFg || '#ffffff');
-    const mat = new THREE.MeshBasicMaterial({
-      map: tex, transparent: true, depthWrite: false,
-      polygonOffset: true, polygonOffsetFactor: -2
-    });
-    const nm = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.22), mat);
-    nm.position.set(0, BODY_H * 0.62, -0.106);
-    nm.rotation.y = Math.PI;
-    hip.add(nm);
-  }
-  if (opts.logo) {
-    const mat = new THREE.MeshBasicMaterial({
-      map: EPH_LOGO_TEX, transparent: true, depthWrite: false,
-      polygonOffset: true, polygonOffsetFactor: -2
-    });
-    const lm = new THREE.Mesh(new THREE.PlaneGeometry(0.085, 0.085), mat);
-    lm.position.set(-0.075, BODY_H * 0.72, 0.106);
-    hip.add(lm);
-  }
-
-  const emote = new THREE.Sprite(EMOTE_MAT);
-  emote.scale.set(1.00, 0.625, 1);
-  emote.position.set(0, 2.05, 0);
-  emote.visible = false;
-  root.add(emote);
-
-  const buildArm = (side) => {
-    const sh = new THREE.Group();
-    sh.position.set(side * SHOULDER_X, SHOULDER_Y, 0);
-    hip.add(sh);
-    addPart(GEO.uarm, shirtC, sh);
-    const el = new THREE.Group();
-    el.position.y = -UPPER_ARM;
-    sh.add(el);
-    addPart(GEO.farm, skinC, el);
-    addPart(GEO.hand, skinC, el);
-    return { shoulder: sh, elbow: el };
-  };
-  const armL = buildArm( 1);
-  const armR = buildArm(-1);
-
-  const buildLeg = (side) => {
-    const hp = new THREE.Group();
-    hp.position.set(side * HIP_X, 0, 0);
-    hip.add(hp);
-    addPart(GEO.thigh, pantsC, hp);
-    const kn = new THREE.Group();
-    kn.position.y = -THIGH_LEN;
-    hp.add(kn);
-    addPart(GEO.shin, pantsC, kn);
-    const an = new THREE.Group();
-    an.position.y = -SHIN_LEN;
-    kn.add(an);
-    addPart(GEO.foot, 0x2a2a2a, an);
-    return { hip: hp, knee: kn, ankle: an };
-  };
-  const legL = buildLeg( 1);
-  const legR = buildLeg(-1);
-
-  const shadow = new THREE.Mesh(SHADOW_GEO, MAT.shadow);
-  shadow.scale.set(0.42, 1, 0.42);
-  shadow.position.y = 0.02;
-  root.add(shadow);
-
-  return {
-    root, hip, armL, armR, legL, legR, shadow, head,
-    face: { eyeL, eyeR, mouthNeutral, mouthSmile, emote }
-  };
-}
-
-function setExpression(rig, mode) {
-  const f = rig.face;
-  if (!f) return;
-  if (mode === 'suu') {
-    f.mouthNeutral.visible = false;
-    f.mouthSmile.visible   = true;
-    f.eyeL.scale.set(1.15, 0.42, 1);
-    f.eyeR.scale.set(1.15, 0.42, 1);
-    f.emote.visible = true;
-  } else {
-    f.mouthNeutral.visible = true;
-    f.mouthSmile.visible   = false;
-    f.eyeL.scale.set(1, 1, 1);
-    f.eyeR.scale.set(1, 1, 1);
-    f.emote.visible = false;
-  }
-}
-
-/* ============================================================================
-   15.  POSE
-   ========================================================================== */
-function legCycle(p, s01, strideAmp, kneeAmp, footAmp) {
-  const swing = Math.sin(p);
-  const lift  = Math.max(0, Math.sin(p + Math.PI * 0.72));
-  const hipA  = swing * strideAmp * s01;
-  const kneeA = lift * kneeAmp * s01 + 0.06;
-  const footA = -(hipA + kneeA) * 0.88 + Math.sin(p * 2) * footAmp * s01;
-  return { hip: hipA, knee: kneeA, foot: footA };
-}
-function armCycle(p, s01) {
-  const swing = Math.sin(p);
-  return {
-    shoulder: swing * 0.52 * s01,
-    elbow: 0.18 + Math.max(0, swing) * 0.62 * s01 + 0.10 * s01
-  };
-}
-function computePose(c) {
-  const s01   = clamp(c.speed / c.runSpeed, 0, 1);
-  const phase = c.cyclePhase;
-  const P = {
-    hipY: HIP_Y, lean: 0,
-    legL: { hip: 0, knee: 0.05, foot: 0 },
-    legR: { hip: 0, knee: 0.05, foot: 0 },
-    armL: { shoulder: 0, elbow: 0.20 },
-    armR: { shoulder: 0, elbow: 0.20 }
-  };
-  if (c.celebrateTimer > 0) {
-    const k = clamp(c.celebrateTimer / c.celebrateDuration, 0, 1);
-    const t = c.t;
-    const env = Math.min(1, k * 2.4);
-    const bounce = Math.abs(Math.sin(t * 9.5)) * 0.17 * env;
-    const wave   = Math.sin(t * 11.0) * 0.30 * env;
-    P.hipY = HIP_Y + bounce;
-    P.lean = -0.13 * env;
-    P.armL.shoulder = (2.62 + wave) * env;
-    P.armR.shoulder = (2.62 - wave) * env;
-    P.armL.elbow = 0.55 * env;
-    P.armR.elbow = 0.55 * env;
-    P.legL.hip  = -0.10 * env;
-    P.legR.hip  = -0.10 * env;
-    P.legL.knee = (0.22 + bounce * 2.2) * env;
-    P.legR.knee = (0.22 + bounce * 2.2) * env;
-    P.legL.foot = -0.12 * env;
-    P.legR.foot = -0.12 * env;
-    return P;
-  }
-  if (c.onGround) {
-    if (s01 < 0.02) {
-      const b = Math.sin(c.t * 1.6) * 0.012;
-      P.hipY = HIP_Y + b;
-      P.legL.knee = 0.06 + b * 0.4;
-      P.legR.knee = 0.06 + b * 0.4;
-      P.armL.elbow = 0.22 + b * 0.8;
-      P.armR.elbow = 0.22 + b * 0.8;
-    } else {
-      const pL = phase, pR = phase + Math.PI;
-      P.lean = 0.06 + s01 * 0.30;
-      P.hipY = HIP_Y + Math.cos(phase * 2) * (0.025 + s01 * 0.045);
-      P.legL = legCycle(pL, s01, 0.55 + s01*0.30, 1.05 + s01*0.55, 0.20 + s01*0.35);
-      P.legR = legCycle(pR, s01, 0.55 + s01*0.30, 1.05 + s01*0.55, 0.20 + s01*0.35);
-      P.armL = armCycle(pR, s01);
-      P.armR = armCycle(pL, s01);
-    }
-  } else {
-    const upT = clamp(c.vel.y / 5.0, -1, 1);
-    if (upT > 0) {
-      const k = smoothstep(upT);
-      P.legL.hip = -lerp(0.10, 0.55, k);
-      P.legR.hip = -lerp(0.00, 0.30, k);
-      P.legL.knee =  lerp(0.30, 1.30, k);
-      P.legR.knee =  lerp(0.20, 0.90, k);
-      P.armL.shoulder = -lerp(0.30, 1.35, k);
-      P.armR.shoulder = -lerp(0.30, 1.35, k);
-      P.armL.elbow = 0.35; P.armR.elbow = 0.35;
-      P.hipY = HIP_Y + 0.02 * k;
-      P.lean = 0.12 * k;
-    } else {
-      const k = smoothstep(-upT);
-      P.legL.hip = -lerp(0.15, 0.35, k);
-      P.legR.hip = -lerp(0.05, 0.15, k);
-      P.legL.knee =  lerp(0.30, 0.70, k);
-      P.legR.knee =  lerp(0.30, 0.55, k);
-      P.armL.shoulder = lerp(-0.30, 0.20, k);
-      P.armR.shoulder = lerp(-0.30, 0.20, k);
-      P.armL.elbow = 0.30; P.armR.elbow = 0.30;
-      P.lean = 0.05;
-    }
-  }
-  if (c.landTimer > 0) {
-    const k = c.landTimer / c.landDuration;
-    const e = k * k;
-    P.hipY   -= 0.16 * e;
-    P.legL.knee += 0.85 * e;  P.legR.knee += 0.85 * e;
-    P.legL.hip  -= 0.30 * e;  P.legR.hip  -= 0.30 * e;
-    P.legL.foot += 0.35 * e;  P.legR.foot += 0.35 * e;
-    P.armL.shoulder -= 0.35 * e; P.armR.shoulder -= 0.35 * e;
-    P.lean += 0.18 * e;
-  }
-  if (c.kickTimer > 0) {
-    const k = c.kickTimer / c.kickDuration;
-    const t = 1 - k;
-    let swing;
-    if (t < 0.32)      swing = -smoothstep(t / 0.32) * 0.55;
-    else if (t < 0.55) swing = lerp(-0.55, 1.35, smoothstep((t - 0.32) / 0.23));
-    else               swing = lerp(1.35, 0.25, smoothstep((t - 0.55) / 0.45));
-    P.legR.hip  = swing;
-    P.legR.knee = Math.max(0.05, 0.55 - swing * 0.35);
-    P.legR.foot = -(P.legR.hip + P.legR.knee) * 0.7 - 0.15;
-    P.armL.shoulder = -swing * 0.55;
-    P.armR.shoulder =  swing * 0.40;
-    P.lean += swing * 0.10;
-  }
-  return P;
-}
-function applyPose(rig, pose) {
-  rig.hip.position.y = pose.hipY;
-  rig.hip.rotation.x = -pose.lean;
-  rig.legL.hip.rotation.x   = -pose.legL.hip;
-  rig.legL.knee.rotation.x  =  pose.legL.knee;
-  rig.legL.ankle.rotation.x =  pose.legL.foot;
-  rig.legR.hip.rotation.x   = -pose.legR.hip;
-  rig.legR.knee.rotation.x  =  pose.legR.knee;
-  rig.legR.ankle.rotation.x =  pose.legR.foot;
-  rig.armL.shoulder.rotation.x = -pose.armL.shoulder;
-  rig.armL.elbow.rotation.x    =  pose.armL.elbow;
-  rig.armR.shoulder.rotation.x = -pose.armR.shoulder;
-  rig.armR.elbow.rotation.x    =  pose.armR.elbow;
-}
-
-/* ============================================================================
-   16.  CONTROLLER
-   ========================================================================== */
-const GRAVITY     = 22.0;
-const JUMP_VEL    = 7.2;
-const WALK_SPEED  = 2.6;
-const RUN_SPEED   = 5.8;
-const ACCEL       = 16.0;
-const DECEL       = 22.0;
-const AIR_ACCEL   = 4.5;
-const COYOTE      = 0.11;
-const JUMP_BUFFER = 0.14;
-const JUMP_CUT    = 0.42;
-const FIELD_INSET = 0.35;
-
-class Character {
-  constructor(rig, x, z, yaw, team) {
-    this.rig = rig; this.team = team;
-    this.pos = new THREE.Vector3(x, 0, z);
-    this.vel = new THREE.Vector3();
-    this.yaw = yaw; this.targetYaw = yaw;
-    this.onGround = true;
-    this.speed = 0; this.runSpeed = RUN_SPEED;
-    this.cyclePhase = 0; this.t = 0;
-    this.kickTimer = 0; this.kickDuration = 0.42;
-    this.landTimer = 0; this.landDuration = 0.24;
-    this.celebrateTimer = 0; this.celebrateDuration = 2.4;
-    this.coyote = 0; this.jumpBuffer = 0; this.jumpHeld = false;
-  }
-  kick() { this.kickTimer = this.kickDuration; }
-  jump() { this.jumpBuffer = JUMP_BUFFER; }
-  releaseJump() { this.jumpHeld = false; }
-  celebrate() {
-    this.celebrateTimer = this.celebrateDuration;
-    this.kickTimer = 0; this.landTimer = 0;
-    this.vel.set(0, 0, 0);
-    setExpression(this.rig, 'suu');
-  }
-  update(dt, wishX, wishZ, wantJump, jumpHeld) {
-    this.t += dt;
-    if (this.kickTimer > 0) this.kickTimer -= dt;
-    if (this.landTimer > 0) this.landTimer -= dt;
-    if (this.celebrateTimer > 0) {
-      this.celebrateTimer -= dt;
-      wishX = 0; wishZ = 0; wantJump = false;
-      this.vel.x = damp(this.vel.x, 0, 12, dt);
-      this.vel.z = damp(this.vel.z, 0, 12, dt);
-      if (this.celebrateTimer <= 0) setExpression(this.rig, 'neutral');
-    }
-    if (wantJump) this.jumpBuffer = JUMP_BUFFER;
-    if (this.jumpBuffer > 0) this.jumpBuffer -= dt;
-    this.jumpHeld = jumpHeld;
-    if (this.onGround) this.coyote = COYOTE;
-    else if (this.coyote > 0) this.coyote -= dt;
-    if (this.jumpBuffer > 0 && (this.onGround || this.coyote > 0) && this.celebrateTimer <= 0) {
-      this.vel.y = JUMP_VEL;
-      this.onGround = false;
-      this.coyote = 0; this.jumpBuffer = 0; this.landTimer = 0;
-    }
-    const inputMag = Math.hypot(wishX, wishZ);
-    const hasInput = inputMag > 0.02;
-    let dx = 0, dz = 0;
-    if (hasInput) { dx = wishX / inputMag; dz = wishZ / inputMag; }
-    const targetSpeed = hasInput ? (WALK_SPEED + (RUN_SPEED - WALK_SPEED) * clamp(inputMag, 0, 1)) : 0;
-    const accelRate = this.onGround ? (hasInput ? ACCEL : DECEL) : AIR_ACCEL;
-    this.vel.x = damp(this.vel.x, dx * targetSpeed, accelRate, dt);
-    this.vel.z = damp(this.vel.z, dz * targetSpeed, accelRate, dt);
-    if (!this.onGround) {
-      this.vel.y -= GRAVITY * dt;
-      if (this.vel.y > 0 && !jumpHeld && this.jumpBuffer <= 0) {
-        this.vel.y *= Math.pow(JUMP_CUT, dt * 60);
-      }
-    }
-    this.pos.x += this.vel.x * dt;
-    this.pos.z += this.vel.z * dt;
-    this.pos.y += this.vel.y * dt;
-    if (this.pos.y <= 0) {
-      this.pos.y = 0;
-      if (!this.onGround) {
-        const impact = Math.abs(this.vel.y);
-        if (impact > 3.5) this.landTimer = this.landDuration;
-        this.onGround = true;
-      }
-      this.vel.y = 0;
-    } else this.onGround = false;
-    if (hasInput && this.onGround && this.celebrateTimer <= 0) {
-      this.targetYaw = Math.atan2(dx, dz);
-    }
-    const dYaw = shortestAngle(this.yaw, this.targetYaw);
-    this.yaw += dYaw * Math.min(1, dt * 13);
-    const horizSpeed = Math.hypot(this.vel.x, this.vel.z);
-    this.speed = horizSpeed;
-    if (this.onGround && this.celebrateTimer <= 0) {
-      const strideLen = 1.9 + (horizSpeed / RUN_SPEED) * 0.7;
-      this.cyclePhase = mod(this.cyclePhase + (horizSpeed / strideLen) * TAU * dt, TAU);
-    }
-    const bx0 = PB.minX + FIELD_INSET, bx1 = PB.maxX - FIELD_INSET;
-    const bz0 = PB.minZ + FIELD_INSET, bz1 = PB.maxZ - FIELD_INSET;
-    if (this.pos.x < bx0) { this.pos.x = bx0; this.vel.x = Math.max(0, this.vel.x); }
-    if (this.pos.x > bx1) { this.pos.x = bx1; this.vel.x = Math.min(0, this.vel.x); }
-    if (this.pos.z < bz0) { this.pos.z = bz0; this.vel.z = Math.max(0, this.vel.z); }
-    if (this.pos.z > bz1) { this.pos.z = bz1; this.vel.z = Math.min(0, this.vel.z); }
-    this.rig.root.position.copy(this.pos);
-    this.rig.root.rotation.y = this.yaw;
-    applyPose(this.rig, computePose(this));
-    if (this.celebrateTimer > 0) {
-      const e = this.rig.face.emote;
-      const s = 1 + Math.sin(this.t * 12) * 0.10;
-      e.scale.set(1.00 * s, 0.625 * s, 1);
-    }
-    const h = this.pos.y;
-    const sc = clamp(1 - h * 0.22, 0.35, 1);
-    this.rig.shadow.scale.set(0.42 * sc, 1, 0.42 * sc);
-    this.rig.shadow.position.y = 0.02 - this.pos.y + h;
-  }
-}
-
-/* ============================================================================
-   17.  BALL
-   ========================================================================== */
-const BALL_R = 0.11;
-const GROUND_Y = 0.02;
-
-function makeBallTexture() {
-  const c = document.createElement('canvas');
-  c.width = c.height = 128;
-  const g = c.getContext('2d');
-  g.fillStyle = '#f4f2ea'; g.fillRect(0, 0, 128, 128);
-  g.fillStyle = '#141414';
-  const spots = [[22,22],[86,20],[54,62],[20,102],[88,104],[112,60],[0,60],[64,128],[64,-4]];
-  for (const [cx, cy] of spots) {
-    g.beginPath();
-    for (let i = 0; i < 5; i++) {
-      const a = -Math.PI/2 + i * TAU/5;
-      const px = cx + Math.cos(a) * 13, py = cy + Math.sin(a) * 13;
-      if (i === 0) g.moveTo(px, py); else g.lineTo(px, py);
-    }
-    g.closePath(); g.fill();
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
-const ball = {
-  pos: new THREE.Vector3(PITCH.cx, GROUND_Y + BALL_R, PITCH.cz),
-  prevPos: new THREE.Vector3(),
-  vel: new THREE.Vector3(),
-  mesh: null,
-  goalCooldown: 0, resetTimer: 0,
-  lastKicker: null,
-  spinAxis: new THREE.Vector3()
-};
-
-function buildBall() {
-  const geo = new THREE.SphereGeometry(BALL_R, 12, 10);
-  const mat = new THREE.MeshLambertMaterial({ map: makeBallTexture() });
-  ball.mesh = new THREE.Mesh(geo, mat);
-  ball.mesh.position.copy(ball.pos);
-  scene.add(ball.mesh);
-}
-
-const kickRing = new THREE.Mesh(
-  new THREE.RingGeometry(0.28, 0.36, 16).rotateX(-Math.PI/2),
-  new THREE.MeshBasicMaterial({ color:0xffd23f, transparent:true, opacity:0.85,
-                                side:THREE.DoubleSide, depthWrite:false })
-);
-kickRing.visible = false;
-scene.add(kickRing);
-
-const FIXED_DT = 1/60;
-let ballAccum = 0;
-
-function resetBall() {
-  ball.pos.set(PITCH.cx, GROUND_Y + BALL_R, PITCH.cz);
-  ball.vel.set(0, 0, 0);
-  ball.lastKicker = null;
-}
-
-function stepBall(dt) {
-  ball.prevPos.copy(ball.pos);
-  ball.vel.y -= 9.81 * dt;
-  const sp = ball.vel.length();
-  if (sp > 0.02) ball.vel.multiplyScalar(Math.exp(-0.20 * dt));
-  ball.pos.addScaledVector(ball.vel, dt);
-
-  const floor = GROUND_Y + BALL_R;
-  if (ball.pos.y < floor) {
-    ball.pos.y = floor;
-    if (ball.vel.y < 0) {
-      const impact = -ball.vel.y;
-      if (impact > 1.2) playBounce(Math.min(1, impact / 9));
-      ball.vel.y = impact * 0.55;
-      ball.vel.x *= 0.86; ball.vel.z *= 0.86;
-      if (Math.abs(ball.vel.y) < 0.55) ball.vel.y = 0;
-    }
-    const hs = Math.hypot(ball.vel.x, ball.vel.z);
-    if (hs > 0.001) {
-      const f = Math.exp(-1.45 * dt);
-      ball.vel.x *= f; ball.vel.z *= f;
-      if (hs < 0.09) { ball.vel.x = 0; ball.vel.z = 0; }
-    }
-  }
-
-  const inGoalZ = Math.abs(ball.pos.z - PITCH.cz) < GOAL_W/2 + 0.02;
-  const underBar = ball.pos.y < GOAL_H;
-
-  if (ball.pos.x < PB.minX + BALL_R) {
-    const insideGoal = inGoalZ && underBar && ball.pos.x > PB.minX - GOAL_DEPTH - 0.15;
-    if (!insideGoal) { ball.pos.x = PB.minX + BALL_R; ball.vel.x = Math.abs(ball.vel.x) * 0.55; }
-  }
-  if (ball.pos.x > PB.maxX - BALL_R) {
-    const insideGoal = inGoalZ && underBar && ball.pos.x < PB.maxX + GOAL_DEPTH + 0.15;
-    if (!insideGoal) { ball.pos.x = PB.maxX - BALL_R; ball.vel.x = -Math.abs(ball.vel.x) * 0.55; }
-  }
-  if (ball.pos.z < PB.minZ + BALL_R) { ball.pos.z = PB.minZ + BALL_R; ball.vel.z = Math.abs(ball.vel.z) * 0.55; }
-  if (ball.pos.z > PB.maxZ - BALL_R) { ball.pos.z = PB.maxZ - BALL_R; ball.vel.z = -Math.abs(ball.vel.z) * 0.55; }
-
-  const westBox = ball.pos.x < PB.minX && ball.pos.x > PB.minX - GOAL_DEPTH;
-  const eastBox = ball.pos.x > PB.maxX && ball.pos.x < PB.maxX + GOAL_DEPTH;
-  if ((westBox || eastBox) && inGoalZ) {
-    ball.vel.multiplyScalar(Math.exp(-7.5 * dt));
-    const backX = westBox ? PB.minX - GOAL_DEPTH + BALL_R : PB.maxX + GOAL_DEPTH - BALL_R;
-    if (westBox && ball.pos.x < backX) { ball.pos.x = backX; ball.vel.x = Math.abs(ball.vel.x) * 0.15; }
-    if (eastBox && ball.pos.x > backX) { ball.pos.x = backX; ball.vel.x = -Math.abs(ball.vel.x) * 0.15; }
-  }
-
-  const collidePost = (px, pz) => {
-    const ddx = ball.pos.x - px, ddz = ball.pos.z - pz;
-    const d2 = ddx*ddx + ddz*ddz, minD = BALL_R + 0.07;
-    if (d2 < minD*minD && d2 > 1e-9 && ball.pos.y < GOAL_H + 0.05) {
-      const d = Math.sqrt(d2), nx = ddx/d, nz = ddz/d;
-      ball.pos.x = px + nx*minD;
-      ball.pos.z = pz + nz*minD;
-      const vn = ball.vel.x*nx + ball.vel.z*nz;
-      if (vn < 0) {
-        ball.vel.x -= 1.6 * vn * nx;
-        ball.vel.z -= 1.6 * vn * nz;
-        playPost();
-      }
-    }
-  };
-  const zP1 = PITCH.cz - GOAL_W/2, zP2 = PITCH.cz + GOAL_W/2;
-  collidePost(PB.minX, zP1); collidePost(PB.minX, zP2);
-  collidePost(PB.maxX, zP1); collidePost(PB.maxX, zP2);
-
-  if (ball.pos.y > GOAL_H - 0.20 && ball.pos.y < GOAL_H + 0.20) {
-    for (const gx of [PB.minX, PB.maxX]) {
-      if (Math.abs(ball.pos.x - gx) < BALL_R + 0.07 &&
-          Math.abs(ball.pos.z - PITCH.cz) < GOAL_W/2) {
-        ball.pos.y = GOAL_H - 0.20;
-        ball.vel.y = Math.abs(ball.vel.y) * 0.55;
-        playPost();
-      }
-    }
-  }
-
-  if (Math.abs(ball.pos.x - PITCH.cx) > 90 || Math.abs(ball.pos.z - PITCH.cz) > 90) resetBall();
-}
-
-function checkGoal() {
-  if (ball.goalCooldown > 0) return;
-  const gz0 = PITCH.cz - GOAL_W/2, gz1 = PITCH.cz + GOAL_W/2;
-  const px = ball.prevPos.x, cx = ball.pos.x;
-  const crossed = (plane, dir) => {
-    if (dir > 0 ? (px < plane && cx >= plane) : (px > plane && cx <= plane)) {
-      const t = (plane - px) / (cx - px);
-      const zc = ball.prevPos.z + (ball.pos.z - ball.prevPos.z) * t;
-      const yc = ball.prevPos.y + (ball.pos.y - ball.prevPos.y) * t;
-      if (zc > gz0 && zc < gz1 && yc > 0 && yc < GOAL_H) return true;
-    }
-    return false;
-  };
-  if (crossed(PB.minX, -1)) { onGoal(TEAM.RED); return; }
-  if (crossed(PB.maxX,  1)) { onGoal(TEAM.ARG); return; }
-}
-
-/* ============================================================================
-   18.  GAME STATE
-   ========================================================================== */
-let player     = null;
-let npcs       = [];
-let playerTeam = TEAM.RED;
-
-const goalFlashEl = document.getElementById('goalFlash');
-const scoreTextEl = document.getElementById('scoreText');
-const scoreBarEl  = document.getElementById('scoreBar');
-
-function updateScoreHUD() {
-  scoreTextEl.textContent = `${teamScore[TEAM.RED]} – ${teamScore[TEAM.ARG]}`;
-}
-
-function onGoal(scoringTeam) {
-  teamScore[scoringTeam]++;
-  updateScoreHUD();
-  ball.goalCooldown = 3.2;
-  ball.resetTimer = 2.4;
-
-  const all = [player].concat(npcs).filter(Boolean);
-  for (const ch of all) {
-    if (ch.team === scoringTeam) ch.celebrate();
-  }
-  playCheer();
-
-  const mine = scoringTeam === playerTeam;
-  goalFlashEl.textContent = mine ? 'SUU!  GOAL!' : `${TEAM_NAME[scoringTeam]} GOAL`;
-  goalFlashEl.classList.toggle('opp', !mine);
-  goalFlashEl.classList.remove('show');
-  void goalFlashEl.offsetWidth;
-  goalFlashEl.classList.add('show');
-}
-
-function updateBall(dt) {
-  if (ball.goalCooldown > 0) ball.goalCooldown -= dt;
-  if (ball.resetTimer > 0) {
-    ball.resetTimer -= dt;
-    if (ball.resetTimer <= 0) resetBall();
-  }
-  ballAccum += dt;
-  let steps = 0;
-  while (ballAccum >= FIXED_DT && steps < 4) {
-    stepBall(FIXED_DT);
-    checkGoal();
-    ballAccum -= FIXED_DT;
-    steps++;
-  }
-  if (steps === 4) ballAccum = 0;
-
-  if (ball.mesh) {
-    ball.mesh.position.copy(ball.pos);
-    const vx = ball.vel.x, vz = ball.vel.z;
-    const hs = Math.hypot(vx, vz);
-    if (hs > 0.02) {
-      ball.spinAxis.set(vz, 0, -vx).normalize();
-      ball.mesh.rotateOnWorldAxis(ball.spinAxis, (hs * dt) / BALL_R);
-    }
-  }
-}
-
-/* ============================================================================
-   19.  KITS + SPAWN
-   ========================================================================== */
-function kitFor(team) {
-  if (team === TEAM.RED) {
-    return { shirt: 0xe63946, pants: 0x1d3557, skin: 0x8d5524, hair: 0x1a1a1a,
-             stripeTex: null, numColor: '#ffffff' };
-  }
-  return { shirt: 0x75AADB, pants: 0x151515, skin: 0x6b4a33, hair: 0x0f0f0f,
-           stripeTex: ARG_STRIPE_TEX, numColor: '#0a2a50' };
-}
-
-function spawnTeams(chosenTeam) {
-  playerTeam = chosenTeam;
-  const oppTeam = 1 - chosenTeam;
-  const kp = kitFor(chosenTeam);
-  const ko = kitFor(oppTeam);
-
-  /* Player — #7 with eph badge */
-  const pRig = buildKid(kp.shirt, kp.pants, kp.skin, kp.hair, {
-    number: 7, numberFg: kp.numColor, logo: true, stripeTex: kp.stripeTex
   });
-  scene.add(pRig.root);
-  player = new Character(pRig, PITCH.cx + 2, PITCH.cz + 3, -Math.PI/2, chosenTeam);
-  pRig.root.position.copy(player.pos);
 
-  /* Teammate — #9 */
-  const tRig = buildKid(kp.shirt, kp.pants, kp.skin, kp.hair, {
-    number: 9, numberFg: kp.numColor, stripeTex: kp.stripeTex
-  });
-  scene.add(tRig.root);
-  const tCh = new Character(tRig, PITCH.cx + 5, PITCH.cz - 4, rnd()*TAU, chosenTeam);
-  tCh.isNPC = true; tCh.kickCd = rr(0.4, 1.6);
-  tCh.wanderX = tCh.pos.x; tCh.wanderZ = tCh.pos.z;
-  npcs.push(tCh);
-
-  /* Opponent #10 */
-  const o1Rig = buildKid(ko.shirt, ko.pants, ko.skin, ko.hair, {
-    number: 10, numberFg: ko.numColor, stripeTex: ko.stripeTex
-  });
-  scene.add(o1Rig.root);
-  const o1Ch = new Character(o1Rig, PITCH.cx - 7, PITCH.cz + 4, rnd()*TAU, oppTeam);
-  o1Ch.isNPC = true; o1Ch.kickCd = rr(0.4, 1.6);
-  o1Ch.wanderX = o1Ch.pos.x; o1Ch.wanderZ = o1Ch.pos.z;
-  npcs.push(o1Ch);
-
-  /* Opponent #11 */
-  const o2Rig = buildKid(ko.shirt, ko.pants, ko.skin, ko.hair, {
-    number: 11, numberFg: ko.numColor, stripeTex: ko.stripeTex
-  });
-  scene.add(o2Rig.root);
-  const o2Ch = new Character(o2Rig, PITCH.cx - 3, PITCH.cz - 6, rnd()*TAU, oppTeam);
-  o2Ch.isNPC = true; o2Ch.kickCd = rr(0.4, 1.6);
-  o2Ch.wanderX = o2Ch.pos.x; o2Ch.wanderZ = o2Ch.pos.z;
-  npcs.push(o2Ch);
-}
-
-/* ============================================================================
-   20.  INPUT
-   ========================================================================== */
-const keys = Object.create(null);
-let wantJumpThisFrame = false;
-
-addEventListener('keydown', (e) => {
-  const k = e.key.toLowerCase();
-  if (!keys[k] && (k === ' ' || k === 'w' || k === 'a' || k === 's' || k === 'd' ||
-      k.startsWith('arrow'))) ensureAudio();
-  keys[k] = true;
-  if (k === ' ' || k.startsWith('arrow')) e.preventDefault();
-  if (k === ' ' && !e.repeat) { wantJumpThisFrame = true; if (player) player.jump(); }
-  if (k === 'f' && !e.repeat) doPlayerKick();
-}, { passive: false });
-addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
-
-class VirtualJoystick {
-  constructor(zoneEl, baseEl, knobEl, radius) {
-    this.zone = zoneEl; this.base = baseEl; this.knob = knobEl;
-    this.radius = radius || 60;
-    this.id = null; this.ox = 0; this.oy = 0;
-    this.dx = 0; this.dy = 0; this.active = false;
-    const self = this;
-    zoneEl.addEventListener('pointerdown', (e) => self._start(e), { passive: false });
-    zoneEl.addEventListener('pointermove', (e) => self._move(e), { passive: false });
-    zoneEl.addEventListener('pointerup',   (e) => self._end(e),   { passive: false });
-    zoneEl.addEventListener('pointercancel',(e) => self._end(e),  { passive: false });
-  }
-  _start(e) {
-    if (this.id !== null) return;
+  /* Home indicator tap / swipe-up */
+  homeInd.addEventListener('click', goHome);
+  homeInd.addEventListener('touchstart', (e) => {
     e.preventDefault();
-    ensureAudio();
-    this.id = e.pointerId;
-    this.ox = e.clientX; this.oy = e.clientY;
-    this.base.style.left = this.ox + 'px';
-    this.base.style.top  = this.oy + 'px';
-    this.knob.style.left = this.ox + 'px';
-    this.knob.style.top  = this.oy + 'px';
-    this.base.classList.add('on');
-    this.knob.classList.add('on');
-    this.active = true;
-    try { this.zone.setPointerCapture(e.pointerId); } catch (err) {}
-  }
-  _move(e) {
-    if (e.pointerId !== this.id) return;
-    e.preventDefault();
-    let dx = e.clientX - this.ox;
-    let dy = e.clientY - this.oy;
-    const d = Math.hypot(dx, dy);
-    if (d > this.radius) { dx = dx/d*this.radius; dy = dy/d*this.radius; }
-    this.knob.style.left = (this.ox + dx) + 'px';
-    this.knob.style.top  = (this.oy + dy) + 'px';
-    this.dx = dx / this.radius;
-    this.dy = dy / this.radius;
-  }
-  _end(e) {
-    if (e.pointerId !== this.id) return;
-    e.preventDefault();
-    this.id = null; this.dx = 0; this.dy = 0;
-    this.base.classList.remove('on');
-    this.knob.classList.remove('on');
-    this.active = false;
-  }
-}
+    goHome();
+  }, { passive: false });
 
-let joyL = null, joyR = null;
-function initJoysticks() {
-  joyL = new VirtualJoystick(
-    document.getElementById('joyZoneL'),
-    document.getElementById('joyBaseL'),
-    document.getElementById('joyKnobL'), 60
-  );
-  joyR = new VirtualJoystick(
-    document.getElementById('joyZoneR'),
-    document.getElementById('joyBaseR'),
-    document.getElementById('joyKnobR'), 60
-  );
-}
-
-const btnJump = document.getElementById('btnJump');
-const btnKick = document.getElementById('btnKick');
-let jumpPointer = null;
-
-btnJump.addEventListener('pointerdown', (e) => {
-  e.preventDefault(); ensureAudio();
-  jumpPointer = e.pointerId;
-  btnJump.classList.add('down');
-  try { btnJump.setPointerCapture(e.pointerId); } catch (err) {}
-  wantJumpThisFrame = true;
-  if (player) player.jump();
-});
-function jumpRelease(e) {
-  if (e && e.pointerId !== undefined && e.pointerId !== jumpPointer) return;
-  jumpPointer = null;
-  btnJump.classList.remove('down');
-  if (player) player.releaseJump();
-}
-btnJump.addEventListener('pointerup', jumpRelease);
-btnJump.addEventListener('pointercancel', jumpRelease);
-
-btnKick.addEventListener('pointerdown', (e) => {
-  e.preventDefault(); ensureAudio();
-  btnKick.classList.add('down');
-  try { btnKick.setPointerCapture(e.pointerId); } catch (err) {}
-  doPlayerKick();
-});
-btnKick.addEventListener('pointerup',   () => btnKick.classList.remove('down'));
-btnKick.addEventListener('pointercancel',() => btnKick.classList.remove('down'));
-
-/* Camera drag on canvas */
-const camState = {
-  yaw: 0, pitch: 0.45, dist: 7.5,
-  targetYaw: 0, targetPitch: 0.45, targetDist: 7.5
-};
-let camPointer = null, camLastX = 0, camLastY = 0;
-
-renderer.domElement.addEventListener('pointerdown', (e) => {
-  if (camPointer !== null) return;
-  e.preventDefault();
-  camPointer = e.pointerId;
-  camLastX = e.clientX; camLastY = e.clientY;
-  try { renderer.domElement.setPointerCapture(e.pointerId); } catch (err) {}
-});
-renderer.domElement.addEventListener('pointermove', (e) => {
-  if (e.pointerId !== camPointer) return;
-  e.preventDefault();
-  const dx = e.clientX - camLastX, dy = e.clientY - camLastY;
-  camLastX = e.clientX; camLastY = e.clientY;
-  camState.targetYaw   -= dx * 0.006;
-  camState.targetPitch = clamp(camState.targetPitch + dy * 0.005, 0.12, 1.35);
-});
-renderer.domElement.addEventListener('pointerup', (e) => {
-  if (e.pointerId !== camPointer) return;
-  camPointer = null;
-});
-renderer.domElement.addEventListener('pointercancel', (e) => {
-  if (e.pointerId !== camPointer) return;
-  camPointer = null;
-});
-renderer.domElement.addEventListener('wheel', (e) => {
-  e.preventDefault();
-  camState.targetDist = clamp(camState.targetDist + e.deltaY * 0.008, 4, 16);
-}, { passive: false });
-
-/* ============================================================================
-   21.  KICK + PUSH
-   ========================================================================== */
-const KICK_RANGE = 1.6;
-function doPlayerKick() {
-  if (!player || player.celebrateTimer > 0) return;
-  const dx = ball.pos.x - player.pos.x;
-  const dz = ball.pos.z - player.pos.z;
-  const d = Math.hypot(dx, dz);
-  if (d > KICK_RANGE || ball.pos.y > 1.6) return;
-  player.kick();
-  let nx = dx / (d || 1), nz = dz / (d || 1);
-  const fx = Math.sin(player.yaw), fz = Math.cos(player.yaw);
-  nx = nx * 0.72 + fx * 0.28;
-  nz = nz * 0.72 + fz * 0.28;
-  const nl = Math.hypot(nx, nz) || 1;
-  nx /= nl; nz /= nl;
-  const runBonus = clamp(player.speed / RUN_SPEED, 0, 1);
-  const power = 11.0 + runBonus * 4.5;
-  const vy = 3.4 + rnd() * 1.8;
-  ball.vel.set(nx * power, vy, nz * power);
-  ball.lastKicker = player;
-  playKick(1.0);
-}
-function playerBallPush() {
-  if (!player || player.celebrateTimer > 0) return;
-  const dx = ball.pos.x - player.pos.x;
-  const dz = ball.pos.z - player.pos.z;
-  const d = Math.hypot(dx, dz);
-  const minD = 0.42 + BALL_R;
-  if (d < minD && d > 1e-4 && ball.pos.y < 1.1) {
-    const nx = dx / d, nz = dz / d;
-    ball.pos.x = player.pos.x + nx * minD;
-    ball.pos.z = player.pos.z + nz * minD;
-    const vn = ball.vel.x * nx + ball.vel.z * nz;
-    if (vn < 0) { ball.vel.x -= vn * nx * 1.25; ball.vel.z -= vn * nz * 1.25; }
-    ball.vel.x += nx * 1.4;
-    ball.vel.z += nz * 1.4;
-    player.vel.x -= nx * 0.6;
-    player.vel.z -= nz * 0.6;
-  }
-}
-
-/* ============================================================================
-   22.  TEAM AI
-   ========================================================================== */
-function updateNPCs(dt) {
-  const chaser = [null, null];
-  const chaserD = [Infinity, Infinity];
-  for (const ch of npcs) {
-    if (ch.celebrateTimer > 0) continue;
-    const d = Math.hypot(ball.pos.x - ch.pos.x, ball.pos.z - ch.pos.z);
-    if (d < chaserD[ch.team]) { chaserD[ch.team] = d; chaser[ch.team] = ch; }
-  }
-  for (const ch of npcs) {
-    ch.kickCd -= dt;
-    if (ch.celebrateTimer > 0) {
-      ch.update(dt, 0, 0, false, false);
-      continue;
+  /* Swipe up anywhere in the bottom 60px of the app view */
+  let swipeStartY = null;
+  appview.addEventListener('touchstart', (e) => {
+    if (!currentApp) return;
+    const t = e.touches[0];
+    const rect = appview.getBoundingClientRect();
+    if (rect.bottom - t.clientY < 80) {
+      swipeStartY = t.clientY;
     }
-    const targetGoalX = TEAM_SCORE_GOAL[ch.team];
-    const ownGoalX    = TEAM_OWN_GOAL[ch.team];
-    let wishX = 0, wishZ = 0;
-    let wantKick = false;
-    const bx = ball.pos.x, bz = ball.pos.z;
-    const dx = bx - ch.pos.x, dz = bz - ch.pos.z;
-    const dist = Math.hypot(dx, dz);
-    if (ch === chaser[ch.team]) {
-      if (dist > 0.9) { wishX = dx / dist; wishZ = dz / dist; }
-      else if (ch.kickCd <= 0) { wantKick = true; }
-    } else {
-      const tx = lerp(ownGoalX, bx, 0.45);
-      const tz = lerp(PITCH.cz, bz, 0.55);
-      const sdx = tx - ch.pos.x, sdz = tz - ch.pos.z;
-      const sd = Math.hypot(sdx, sdz);
-      if (sd > 1.3) {
-        wishX = (sdx / sd) * 0.65;
-        wishZ = (sdz / sd) * 0.65;
-      }
-    }
-    ch.update(dt, wishX, wishZ, false, false);
-    if (wantKick) {
-      ch.kick();
-      const gdx = targetGoalX - bx;
-      const gdz = PITCH.cz - bz;
-      const baseAng = Math.atan2(gdx, gdz);
-      const ang = baseAng + (rnd() - 0.5) * 0.42;
-      const power = 9.5 + rnd() * 4.0;
-      ball.vel.set(Math.sin(ang) * power, 2.6 + rnd() * 2.0, Math.cos(ang) * power);
-      ball.lastKicker = ch;
-      ch.kickCd = 1.4 + rnd() * 1.6;
-      playKick(0.6);
-    }
-  }
-  const all = [player].concat(npcs).filter(Boolean);
-  for (let i = 0; i < all.length; i++) {
-    for (let j = i + 1; j < all.length; j++) {
-      const a = all[i], b = all[j];
-      if (a.celebrateTimer > 0 && b.celebrateTimer > 0) continue;
-      const dx = a.pos.x - b.pos.x, dz = a.pos.z - b.pos.z;
-      const d2 = dx*dx + dz*dz;
-      const minD = 0.55;
-      if (d2 < minD*minD && d2 > 1e-6) {
-        const d = Math.sqrt(d2);
-        const push = (minD - d) * 0.5;
-        const nx = dx / d, nz = dz / d;
-        a.pos.x += nx * push; a.pos.z += nz * push;
-        b.pos.x -= nx * push; b.pos.z -= nz * push;
-      }
-    }
-  }
-}
+  }, { passive: true });
+  appview.addEventListener('touchend', (e) => {
+    if (swipeStartY === null) return;
+    const endY = e.changedTouches[0].clientY;
+    if (swipeStartY - endY > 60) goHome();
+    swipeStartY = null;
+  }, { passive: true });
 
-/* ============================================================================
-   23.  CAMERA
-   ========================================================================== */
-const camLookAt = new THREE.Vector3();
-const camDesired = new THREE.Vector3();
-const camFwd = new THREE.Vector3();
-const camRight = new THREE.Vector3();
-const WORLD_UP = new THREE.Vector3(0, 1, 0);
+  /* Escape key on desktop */
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') goHome();
+  });
 
-function updateCamera(dt) {
-  if (joyR && joyR.active) {
-    const DEAD = 0.16;
-    let rx = joyR.dx, ry = joyR.dy;
-    if (Math.abs(rx) < DEAD) rx = 0;
-    if (Math.abs(ry) < DEAD) ry = 0;
-    camState.targetYaw   -= rx * 2.8 * dt;
-    camState.targetPitch = clamp(camState.targetPitch + ry * 2.2 * dt, 0.12, 1.35);
-  }
-  camState.yaw   = damp(camState.yaw,   camState.targetYaw,   10, dt);
-  camState.pitch = damp(camState.pitch, camState.targetPitch, 10, dt);
-  camState.dist  = damp(camState.dist,  camState.targetDist,  8,  dt);
+  /* ---- First-run nudge: preload metadata of both games so the launch is snappy ---- */
+  const preloads = ['dobo.html', 'eph.html'].map(url => {
+    const l = document.createElement('link');
+    l.rel = 'prefetch';
+    l.href = url;
+    document.head.appendChild(l);
+    return l;
+  });
+  /* nothing else to do with them */
 
-  const px = player ? player.pos.x : PITCH.cx;
-  const pz = player ? player.pos.z : PITCH.cz;
-  const py = 1.10;
-  camLookAt.set(px, py, pz);
+  console.log('%c HOME ', 'background:#ffd23f;color:#000;font-weight:900;padding:3px 8px;border-radius:4px;', 'Ready · 2 apps installed');
 
-  const yaw = camState.yaw, pitch = camState.pitch, d = camState.dist;
-  const horiz = Math.cos(pitch) * d;
-  const vy = Math.sin(pitch) * d;
-  camDesired.set(px + Math.sin(yaw) * horiz, py + vy, pz + Math.cos(yaw) * horiz);
-  if (camDesired.y < 0.6) camDesired.y = 0.6;
-
-  camera.position.lerp(camDesired, 1 - Math.exp(-dt * 8));
-  camera.lookAt(camLookAt);
-
-  camFwd.set(px - camera.position.x, 0, pz - camera.position.z);
-  if (camFwd.lengthSq() < 1e-6) camFwd.set(0, 0, -1);
-  camFwd.normalize();
-  camRight.crossVectors(camFwd, WORLD_UP).normalize();
-}
-
-/* ============================================================================
-   24.  MAIN LOOP
-   ========================================================================== */
-const statEl = document.getElementById('stat');
-let last = performance.now();
-let simTime = 0;
-let fpsAcc = 0, fpsFrames = 0, fps = 0;
-let loopRunning = false;
-const SIGNAL_NAMES = ['RING GREEN','RING YELLOW','ALL RED','CROSS GREEN','CROSS YELLOW'];
-
-function loop(now) {
-  requestAnimationFrame(loop);
-  const dt = Math.min((now - last) / 1000, 0.05);
-  last = now;
-  simTime += dt;
-
-  const st = lightState(simTime);
-  paintLights(st);
-  updateRingTraffic(dt, st);
-  updateCrossTraffic(dt, st);
-  for (const lane of LANES)       for (const v of lane.veh) placeRingVehicle(v, dt, simTime);
-  for (const lane of CROSS_LANES) for (const v of lane.veh) placeCrossVehicle(v, dt);
-
-  for (let i = 0; i < vendorGroups.length; i++) {
-    const m = vendorGroups[i];
-    m.position.y = m.userData.baseY + Math.sin(simTime * 1.6 + m.userData.phase) * 0.035;
-  }
-
-  let ix = 0, iz = 0;
-  if (keys['w'] || keys['arrowup'])    iz += 1;
-  if (keys['s'] || keys['arrowdown'])  iz -= 1;
-  if (keys['a'] || keys['arrowleft'])  ix -= 1;
-  if (keys['d'] || keys['arrowright']) ix += 1;
-  if (joyL && (joyL.active || Math.abs(joyL.dx) > 0.001 || Math.abs(joyL.dy) > 0.001)) {
-    ix = joyL.dx;
-    iz = -joyL.dy;
-  }
-
-  let wishX = camFwd.x * iz + camRight.x * ix;
-  let wishZ = camFwd.z * iz + camRight.z * ix;
-  const mm = Math.hypot(wishX, wishZ);
-  if (mm > 1) { wishX /= mm; wishZ /= mm; }
-
-  const jumpHeld = !!keys[' '] || jumpPointer !== null;
-  if (player) player.update(dt, wishX, wishZ, wantJumpThisFrame, jumpHeld);
-  wantJumpThisFrame = false;
-
-  playerBallPush();
-  updateNPCs(dt);
-  updateBall(dt);
-
-  if (player && ball.mesh) {
-    const bdx = ball.pos.x - player.pos.x;
-    const bdz = ball.pos.z - player.pos.z;
-    const bd = Math.hypot(bdx, bdz);
-    const inRange = bd < KICK_RANGE && ball.pos.y < 1.6 && player.celebrateTimer <= 0;
-    kickRing.visible = inRange;
-    if (inRange) {
-      kickRing.position.set(ball.pos.x, GROUND_Y + 0.03, ball.pos.z);
-      const s = 1 + Math.sin(simTime * 8) * 0.08;
-      kickRing.scale.set(s, 1, s);
-    }
-    btnKick.classList.toggle('hot', inRange);
-  }
-
-  updateCamera(dt);
-  renderer.render(scene, camera);
-
-  fpsAcc += dt; fpsFrames++;
-  if (fpsAcc > 0.5) { fps = Math.round(fpsFrames / fpsAcc); fpsAcc = 0; fpsFrames = 0; }
-
-  statEl.innerHTML =
-    `fps <b>${fps}</b> · ` +
-    `<span style="color:#ff8575">RED</span> <b>${teamScore[TEAM.RED]}</b>` +
-    ` – ` +
-    `<b>${teamScore[TEAM.ARG]}</b> <span style="color:#9ecfff">ARG</span> · ` +
-    (player
-      ? `spd <b>${player.speed.toFixed(1)}</b> ` +
-        `${player.onGround ? '' : '<span style="color:#8ee6ff">AIR</span>'} ` +
-        `${player.celebrateTimer > 0 ? '<span style="color:#ffd23f">SUU!</span>' : ''} · `
-      : '') +
-    `${SIGNAL_NAMES[st]}`;
-}
-
-addEventListener('resize', () => {
-  camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
-});
-
-/* ============================================================================
-   25.  START GAME (called by the picker)
-   ========================================================================== */
-async function startGame(team) {
-  const picker = document.getElementById('clubPicker');
-  const select = document.getElementById('cpSelect');
-  const loader = document.getElementById('cpLoader');
-  const label  = document.getElementById('cpLoadLabel');
-  const bar    = document.getElementById('cpBar');
-
-  if (select) select.style.display = 'none';
-  if (loader) loader.classList.add('on');
-
-  const step = async (pct, text) => {
-    if (label) label.textContent = text;
-    if (bar) bar.style.width = pct + '%';
-    await yieldFrame();
-  };
-
-  try {
-    await step(10, 'BUILDING WORLD…');    buildWorld();
-    await step(35, 'PLACING LIGHTS…');    buildTrafficLights();
-    await step(55, 'SPAWNING TRAFFIC…');  buildVehicles();
-    await step(70, 'SETTING UP STALLS…'); buildVendors();
-    await step(82, 'BUILDING BALL…');     buildBall();
-    await step(92, 'SPAWNING TEAMS…');    spawnTeams(team);
-    await step(100, 'READY!');
-    initJoysticks();
-
-    /* show game UI */
-    scoreBarEl.classList.add('on');
-    document.getElementById('controls').classList.add('on');
-    updateScoreHUD();
-
-    /* warm-up frame */
-    const pRig = player.rig.root;
-    camera.position.set(pRig.position.x + 5, 5, pRig.position.z + 10);
-    camera.lookAt(pRig.position.x, 1, pRig.position.z);
-    renderer.render(scene, camera);
-
-    /* fade out picker */
-    picker.classList.add('gone');
-    setTimeout(() => { picker.style.display = 'none'; }, 450);
-
-    /* kick off the loop */
-    if (!loopRunning) {
-      loopRunning = true;
-      last = performance.now();
-      requestAnimationFrame(loop);
-    }
-  } catch (err) {
-    console.error('startGame failed', err);
-    if (label) label.textContent = 'ERROR: ' + err.message;
-  }
-}
-
-/* Expose to the plain script */
-window.__startGame = startGame;
-window.__moduleReady = true;
-
-/* If the user already tapped before we were ready, honour their pick */
-if (window.__pendingTeam !== null && window.__pendingTeam !== undefined) {
-  const t = window.__pendingTeam;
-  window.__pendingTeam = null;
-  startGame(t);
-}
-
-['pointerdown', 'touchstart', 'keydown'].forEach(evt =>
-  addEventListener(evt, ensureAudio, { once: true, passive: true }));
+})();
 </script>
 </body>
 </html>
