@@ -7,13 +7,12 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23111'/><text x='16' y='23' font-size='16' font-family='monospace' font-weight='900' fill='%23ffd23f' text-anchor='middle'>eph</text></svg>">
 <style>
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;height:100%;overflow:hidden;background:#a8c8e8;
+  html,body{margin:0;height:100%;overflow:hidden;background:#7ab0e0;
             font-family:ui-monospace,Menlo,Consolas,monospace;
             touch-action:none;user-select:none;-webkit-user-select:none;
             overscroll-behavior:none}
   canvas{display:block;touch-action:none}
 
-  /* ---------- TOP LEFT: brand + HUD ---------- */
   #hud{position:fixed;left:10px;top:8px;color:#fff;font-size:11px;line-height:1.65;
        text-shadow:0 1px 4px rgba(0,0,0,.85);pointer-events:none;z-index:22;
        max-width:46vw}
@@ -24,11 +23,11 @@
   #hud .s{opacity:.8;font-size:10px}
   #stat{margin-top:3px;font-size:10px}
 
-  /* ---------- TOP CENTER: score ---------- */
   #scoreBar{position:fixed;top:8px;left:50%;transform:translateX(-50%);
             display:flex;gap:8px;align-items:center;z-index:22;pointer-events:none;
             font:900 14px/1 ui-monospace,monospace;letter-spacing:1px;
-            text-shadow:0 2px 8px rgba(0,0,0,.75)}
+            text-shadow:0 2px 8px rgba(0,0,0,.75);opacity:0;transition:opacity .3s}
+  #scoreBar.on{opacity:1}
   #scoreBar .t{padding:4px 9px;border-radius:8px;color:#fff;
                border:2px solid rgba(255,255,255,.35);font-size:12px}
   #scoreBar .r{background:rgba(210,40,30,.9)}
@@ -36,7 +35,6 @@
                color:#0a2a50;text-shadow:none}
   #scoreBar .v{color:#ffd23f;font-size:17px}
 
-  /* ---------- TOP RIGHT: visitors ---------- */
   #visitors{position:fixed;right:8px;top:8px;z-index:22;
             display:flex;align-items:center;gap:5px;
             background:rgba(0,0,0,.48);border:1px solid rgba(255,255,255,.22);
@@ -49,7 +47,6 @@
   #visitors .dot.cached{background:#ffd23f;box-shadow:0 0 6px #ffd23f;animation:none}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
-  /* ---------- GOAL FLASH ---------- */
   #goalFlash{position:fixed;top:30%;left:50%;
              transform:translate(-50%,-50%) scale(.35);
              font:900 min(14vw,80px)/1 ui-monospace,monospace;
@@ -67,8 +64,9 @@
     70%{opacity:1;transform:translate(-50%,-50%) scale(1)}
     100%{opacity:0;transform:translate(-50%,-50%) scale(1.16)}}
 
-  /* ---------- JOYSTICK ZONES ---------- */
-  /* Left zone = movement. Right zone = camera. Both capture pointers. */
+  #controls{position:fixed;inset:0;z-index:15;pointer-events:none;
+            opacity:0;transition:opacity .35s}
+  #controls.on{opacity:1}
   #joyZoneL{position:fixed;left:0;bottom:0;width:45%;height:55%;
             z-index:15;touch-action:none;pointer-events:auto}
   #joyZoneR{position:fixed;right:0;bottom:0;width:45%;height:55%;
@@ -91,13 +89,12 @@
   #joyKnobL{background:radial-gradient(circle at 35% 30%,#fff,#ffb84d 70%,#e08a20)}
   #joyKnobR{background:radial-gradient(circle at 35% 30%,#fff,#7fc0ff 70%,#2a6fd0)}
 
-  /* ---------- ACTION BUTTONS (above right joystick zone) ---------- */
   .btn{position:fixed;z-index:16;border-radius:50%;border:3px solid #fff;
        color:#fff;font:900 15px/1 ui-monospace,monospace;letter-spacing:1px;
        display:flex;align-items:center;justify-content:center;
        box-shadow:0 5px 20px rgba(0,0,0,.5);touch-action:none;
        transition:transform .07s,background .12s;
-       -webkit-user-select:none;user-select:none}
+       -webkit-user-select:none;user-select:none;pointer-events:auto}
   .btn:active,.btn.down{transform:scale(.9)}
   #btnKick{right:14px;bottom:calc(55% + 14px);
            width:82px;height:82px;background:rgba(230,60,40,.94)}
@@ -105,11 +102,11 @@
   #btnJump{right:calc(14px + 94px);bottom:calc(55% + 20px);
            width:68px;height:68px;background:rgba(60,140,230,.94)}
 
-  /* ---------- CLUB PICKER OVERLAY ---------- */
   #clubPicker{position:fixed;inset:0;z-index:100;
               display:flex;align-items:center;justify-content:center;
               background:linear-gradient(180deg,#7ab0e0 0%,#3a5a80 100%);
-              color:#fff}
+              color:#fff;transition:opacity .4s}
+  #clubPicker.gone{opacity:0;pointer-events:none}
   .cp-inner{text-align:center;
             background:rgba(0,0,0,.38);
             border:2px solid rgba(255,255,255,.22);
@@ -136,17 +133,24 @@
           touch-action:manipulation;user-select:none;-webkit-user-select:none}
   .cp-btn:active{transform:scale(.94)}
   .cp-btn.red{background:linear-gradient(180deg,#e63946 0%,#b91e2a 100%)}
-  .cp-btn.red .num{color:#fff}
   .cp-btn.arg{background:repeating-linear-gradient(90deg,
                 #75AADB 0 16px, #ffffff 16px 32px);
               color:#0a2a50;
               text-shadow:0 1px 2px rgba(255,255,255,.6)}
-  .cp-btn.arg .num{color:#0a2a50}
   .cp-btn .num{font-size:44px;font-weight:900;letter-spacing:1px;line-height:1}
+  .cp-btn.arg .num{color:#0a2a50}
   .cp-btn .name{font-size:12px;font-weight:900;letter-spacing:3px;margin-top:8px}
-  .cp-hint{margin-top:18px;font-size:10px;letter-spacing:1.5px;opacity:.7}
+  .cp-hint{margin-top:18px;font-size:10px;letter-spacing:1.5px;opacity:.7;
+           min-height:14px}
 
-  /* ---------- small screens: shrink joystick chrome ---------- */
+  #cpLoader{display:none}
+  #cpLoader.on{display:block}
+  .loadBar{margin:16px auto 0;width:220px;height:8px;border-radius:4px;
+           background:rgba(255,255,255,.18);overflow:hidden}
+  .loadBar i{display:block;height:100%;width:0%;
+             background:linear-gradient(90deg,#ffd23f,#ff8a3d);
+             transition:width .18s}
+
   @media (max-height:480px){
     .joyBase{width:110px;height:110px}
     .joyKnob{width:50px;height:50px}
@@ -159,7 +163,6 @@
 </head>
 <body>
 
-<!-- ============ TOP LEFT ============ -->
 <div id="hud">
   <div class="brand">
     <svg width="16" height="16" viewBox="0 0 32 32" aria-hidden="true">
@@ -172,38 +175,33 @@
   <div id="stat"></div>
 </div>
 
-<!-- ============ TOP CENTER ============ -->
 <div id="scoreBar">
   <div class="t r" id="scoreTeamLeft">RED</div>
   <div class="v" id="scoreText">0 – 0</div>
   <div class="t b" id="scoreTeamRight">ARG</div>
 </div>
 
-<!-- ============ TOP RIGHT ============ -->
 <div id="visitors" title="Total page visits (unique per device)">
   <span class="dot" id="visitorDot"></span>
   <span id="visitorLabel">VIS</span>
   <span id="visitorSlot"></span>
 </div>
 
-<!-- ============ GOAL FLASH ============ -->
 <div id="goalFlash">SUU! GOAL!</div>
 
-<!-- ============ JOYSTICKS ============ -->
-<div id="joyZoneL">
-  <div class="joyBase" id="joyBaseL"></div>
-  <div class="joyKnob" id="joyKnobL"></div>
-</div>
-<div id="joyZoneR">
-  <div class="joyBase" id="joyBaseR"></div>
-  <div class="joyKnob" id="joyKnobR"></div>
+<div id="controls">
+  <div id="joyZoneL">
+    <div class="joyBase" id="joyBaseL"></div>
+    <div class="joyKnob" id="joyKnobL"></div>
+  </div>
+  <div id="joyZoneR">
+    <div class="joyBase" id="joyBaseR"></div>
+    <div class="joyKnob" id="joyKnobR"></div>
+  </div>
+  <button id="btnJump" class="btn">JUMP</button>
+  <button id="btnKick" class="btn">KICK</button>
 </div>
 
-<!-- ============ ACTION BUTTONS ============ -->
-<button id="btnJump" class="btn">JUMP</button>
-<button id="btnKick" class="btn">KICK</button>
-
-<!-- ============ CLUB PICKER ============ -->
 <div id="clubPicker">
   <div class="cp-inner">
     <div class="cp-brand">
@@ -213,26 +211,33 @@
       </svg>
       EPH
     </div>
-    <h1>PORTHARCOURT EPH</h1>
-    <p>CHOOSE YOUR CLUB</p>
-    <div class="cp-buttons">
-      <div class="cp-btn red" data-team="0">
-        <span class="num">7</span>
-        <span class="name">RED</span>
+
+    <div id="cpSelect">
+      <h1>PORTHARCOURT EPH</h1>
+      <p>CHOOSE YOUR CLUB</p>
+      <div class="cp-buttons">
+        <div class="cp-btn red" data-team="0">
+          <span class="num">7</span>
+          <span class="name">RED</span>
+        </div>
+        <div class="cp-btn arg" data-team="1">
+          <span class="num">7</span>
+          <span class="name">ARG</span>
+        </div>
       </div>
-      <div class="cp-btn arg" data-team="1">
-        <span class="num">7</span>
-        <span class="name">ARG</span>
-      </div>
+      <div class="cp-hint" id="cpHint">TAP A CLUB TO PLAY</div>
     </div>
-    <div class="cp-hint">TAP A CLUB TO PLAY</div>
+
+    <div id="cpLoader">
+      <h1>BUILDING PITCH</h1>
+      <p id="cpLoadLabel">LOADING…</p>
+      <div class="loadBar"><i id="cpBar"></i></div>
+    </div>
   </div>
 </div>
 
-<!-- ============================================================================
-     VISITOR COUNTER — localStorage-gated
-     ========================================================================== -->
 <script>
+/* Visitor counter — localStorage gated */
 (function () {
   const KEY   = 'eph_portharcourt_counted_v1';
   const SLUG  = 'portharcourt-eph';
@@ -268,6 +273,34 @@
 })();
 </script>
 
+<script>
+/* Club picker — plain script, fires immediately on tap.
+   Waits for the module to register window.__startGame. */
+(function () {
+  window.__pendingTeam = null;
+  window.__moduleReady = false;
+
+  function choose(team) {
+    if (window.__moduleReady && window.__startGame) {
+      window.__startGame(team);
+    } else {
+      window.__pendingTeam = team;
+      var hint = document.getElementById('cpHint');
+      if (hint) hint.textContent = 'LOADING…';
+      var btns = document.querySelectorAll('.cp-btn');
+      for (var i = 0; i < btns.length; i++) btns[i].style.pointerEvents = 'none';
+    }
+  }
+
+  document.querySelectorAll('.cp-btn').forEach(function (b) {
+    b.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      choose(parseInt(b.dataset.team, 10) || 0);
+    }, { passive: false });
+  });
+})();
+</script>
+
 <script type="importmap">
 {
   "imports": {
@@ -289,13 +322,14 @@ const mod   = (a, n) => ((a % n) + n) % n;
 const lerp  = (a, b, t) => a + (b - a) * t;
 const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
 const smoothstep = (t) => { t = clamp(t, 0, 1); return t*t*(3 - 2*t); };
-const damp = (a, b, lambda, dt) => lerp(a, b, 1 - Math.exp(-lambda * dt));
+const damp = (a, b, l, dt) => lerp(a, b, 1 - Math.exp(-l * dt));
 const shortestAngle = (from, to) => {
   let d = to - from;
   while (d >  Math.PI) d -= TAU;
   while (d < -Math.PI) d += TAU;
   return d;
 };
+const yieldFrame = () => new Promise(r => setTimeout(r, 0));
 
 let _seed = 0x1a2b3c4d;
 function rnd() { _seed = (_seed * 1664525 + 1013904223) >>> 0; return _seed / 4294967296; }
@@ -333,13 +367,13 @@ const CY = (rt,rb,h,seg,x,y,z,rx=0,ry=0,rz=0) => xform(new THREE.CylinderGeometr
 const SP = (r,x,y,z,seg=8) => xform(new THREE.SphereGeometry(r,seg,Math.max(4,seg-2)), x,y,z);
 
 /* ============================================================================
-   1.  RENDERER / SCENE
+   1.  RENDERER / SCENE / CAMERA
    ========================================================================== */
 const renderer = new THREE.WebGLRenderer({
-  antialias: window.devicePixelRatio < 1.75,
+  antialias: window.devicePixelRatio < 1.5,
   powerPreference: 'high-performance', stencil: false
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.35));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.body.appendChild(renderer.domElement);
@@ -347,15 +381,19 @@ document.body.appendChild(renderer.domElement);
 const SKY = 0xa9c9e8;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(SKY);
-scene.fog = new THREE.Fog(SKY, 90, 420);
+scene.fog = new THREE.Fog(SKY, 90, 380);
 
 const camera = new THREE.PerspectiveCamera(56, innerWidth/innerHeight, 0.4, 900);
+camera.position.set(-28, 12, 40);
+camera.lookAt(-28, 0, 0);
 
 scene.add(new THREE.HemisphereLight(0xcfe4ff, 0x4a4436, 1.15));
 const sun = new THREE.DirectionalLight(0xfff0d0, 1.45);
 sun.position.set(85, 130, 55); scene.add(sun);
 const fill = new THREE.DirectionalLight(0x8fb0ff, 0.30);
 fill.position.set(-70, 45, -60); scene.add(fill);
+
+renderer.render(scene, camera);
 
 /* ============================================================================
    2.  RING PATH
@@ -422,11 +460,35 @@ const MAT = {
 };
 
 /* ============================================================================
-   4.  WORLD
+   4.  CONSTANTS
    ========================================================================== */
-const worldParts = [];
-const W = (g, c) => worldParts.push([g, c]);
+const PITCH = { cx:-28, cz:0, w:28, h:18 };
+const PB = { minX:PITCH.cx-PITCH.w/2, maxX:PITCH.cx+PITCH.w/2,
+             minZ:PITCH.cz-PITCH.h/2, maxZ:PITCH.cz+PITCH.h/2 };
+const GOAL_W=3.2, GOAL_H=2.0, GOAL_DEPTH=1.4;
+const SCHOOL = { x:PITCH.cx, z:-20, w:20, d:8, h:6 };
+const inPitchZone  = (x,z,m=6)=> x>PB.minX-m&&x<PB.maxX+m&&z>PB.minZ-m&&z<PB.maxZ+m;
+const inSchoolZone = (x,z,m=3)=> x>SCHOOL.x-SCHOOL.w/2-m&&x<SCHOOL.x+SCHOOL.w/2+m&&
+                                 z>SCHOOL.z-SCHOOL.d/2-m&&z<SCHOOL.z+SCHOOL.d/2+m;
 
+/* ============================================================================
+   5.  STATE
+   ========================================================================== */
+let worldMesh     = null;
+let trafficLights = [];
+let LANES = [
+  { off:-4.5, dir:-1, veh:[] }, { off:-1.5, dir:-1, veh:[] },
+  { off: 1.5, dir: 1, veh:[] }, { off: 4.5, dir: 1, veh:[] }
+];
+let CROSS_LANES = [ { x:-2.5, dir: 1, veh:[] }, { x: 2.5, dir:-1, veh:[] } ];
+const TEMPLATES = {};
+const wheelCache = new Map();
+const vendorGroups = [];
+const SHADOW_GEO = new THREE.CircleGeometry(1, 10).rotateX(-Math.PI/2);
+
+/* ============================================================================
+   6.  WORLD BUILD
+   ========================================================================== */
 function stripGeo(path, offA, yA, offB, yB, N) {
   const pos=[], nor=[], uv=[], idx=[], p={};
   for (let i=0; i<=N; i++) {
@@ -449,141 +511,143 @@ function stripGeo(path, offA, yA, offB, yB, N) {
   g.setIndex(idx); return g;
 }
 
-const PITCH = { cx:-28, cz:0, w:28, h:18 };
-const PB = { minX:PITCH.cx-PITCH.w/2, maxX:PITCH.cx+PITCH.w/2,
-             minZ:PITCH.cz-PITCH.h/2, maxZ:PITCH.cz+PITCH.h/2 };
-const GOAL_W=3.2, GOAL_H=2.0, GOAL_DEPTH=1.4;
-const SCHOOL = { x:PITCH.cx, z:-20, w:20, d:8, h:6 };
-const inPitchZone  = (x,z,m=6)=> x>PB.minX-m&&x<PB.maxX+m&&z>PB.minZ-m&&z<PB.maxZ+m;
-const inSchoolZone = (x,z,m=3)=> x>SCHOOL.x-SCHOOL.w/2-m&&x<SCHOOL.x+SCHOOL.w/2+m&&
-                                 z>SCHOOL.z-SCHOOL.d/2-m&&z<SCHOOL.z+SCHOOL.d/2+m;
+function buildWorld() {
+  const worldParts = [];
+  const W = (g, c) => worldParts.push([g, c]);
 
-W(xform(new THREE.PlaneGeometry(1000,1000).rotateX(-Math.PI/2), 0,-0.08,0), 0x6f7a4e);
+  W(xform(new THREE.PlaneGeometry(800, 800).rotateX(-Math.PI/2), 0, -0.08, 0), 0x6f7a4e);
 
-const NSEG=300;
-W(stripGeo(RING,-ROAD_HALF,0.020, ROAD_HALF,0.020,NSEG), 0x2f3033);
-W(stripGeo(RING, ROAD_HALF,0.020, ROAD_HALF,0.16,NSEG), 0x9a9a92);
-W(stripGeo(RING, ROAD_HALF,0.160, 10.0,0.160,NSEG), 0xa8a89e);
-W(stripGeo(RING,-ROAD_HALF,0.160,-ROAD_HALF,0.020,NSEG), 0x9a9a92);
-W(stripGeo(RING,-10.0,0.160,-ROAD_HALF,0.160,NSEG), 0xa8a89e);
-{
-  const W2=5.0;
-  W(xform(new THREE.PlaneGeometry(W2*2, CROSS_HALF*2).rotateX(-Math.PI/2), 0,0.012,0), 0x2f3033);
-  const walk = new THREE.BoxGeometry(3,0.16,CROSS_HALF*2);
-  W(xform(walk.clone(), -W2-1.5, 0.08, 0), 0xa8a89e);
-  W(xform(walk.clone(),  W2+1.5, 0.08, 0), 0xa8a89e);
-}
-W(stripGeo(RING,-0.22,0.030,-0.10,0.030,NSEG), 0xd9b32a);
-W(stripGeo(RING, 0.10,0.030, 0.22,0.030,NSEG), 0xd9b32a);
-for (let s=0; s<L; s+=9) {
-  const p = RING.at(s), rx=-p.tz, rz=p.tx, ry=Math.atan2(p.tx,p.tz);
-  for (const off of [-3,3])
-    W(xform(new THREE.BoxGeometry(0.16,0.02,3.4), p.x+rx*off, 0.030, p.z+rz*off, 0,ry,0), 0xdedbcc);
-}
-for (let z=-CROSS_HALF; z<CROSS_HALF; z+=9)
-  W(xform(new THREE.BoxGeometry(0.16,0.02,3.4), 0,0.030,z), 0xdedbcc);
+  const NSEG = 140;
+  W(stripGeo(RING,-ROAD_HALF,0.020, ROAD_HALF,0.020,NSEG), 0x2f3033);
+  W(stripGeo(RING, ROAD_HALF,0.020, ROAD_HALF,0.16,NSEG), 0x9a9a92);
+  W(stripGeo(RING, ROAD_HALF,0.160, 10.0,0.160,NSEG), 0xa8a89e);
+  W(stripGeo(RING,-ROAD_HALF,0.160,-ROAD_HALF,0.020,NSEG), 0x9a9a92);
+  W(stripGeo(RING,-10.0,0.160,-ROAD_HALF,0.160,NSEG), 0xa8a89e);
 
-{
-  const pal = [0x8d8577,0x9a8f7e,0x7d7a73,0xa39684,0x6f6a63,0xb0a48f,0x857f74,0x9c9486,0x74706a];
-  const inRing  = (x,z)=> Math.abs(x)<76&&Math.abs(z)<58;
-  const onCross = (x)=> Math.abs(x)<12;
-  for (let gx=-170; gx<=170; gx+=26)
-    for (let gz=-150; gz<=150; gz+=26) {
-      const x=gx+rr(-5,5), z=gz+rr(-5,5);
-      if (inRing(x,z)||onCross(x)) continue;
-      if (inPitchZone(x,z,10)||inSchoolZone(x,z,6)) continue;
-      if (rnd()<0.22) continue;
-      const w=rr(9,19), d=rr(9,19), h=rr(7,34);
-      const col = pal[(rnd()*pal.length)|0];
-      W(xform(new THREE.BoxGeometry(w,h,d), x,h/2,z, 0,rr(-0.25,0.25),0), col);
-      W(xform(new THREE.BoxGeometry(w*1.05,0.7,d*1.05), x,h+0.35,z), 0x5b5750);
-      if (rnd()<0.55)
-        W(xform(new THREE.BoxGeometry(rr(2.5,4.5),2.2,rr(2.5,4.5)),
-                x+rr(-w*0.25,w*0.25), h+1.5, z+rr(-d*0.25,d*0.25)), 0x8a6b4a);
+  {
+    const W2=5.0;
+    W(xform(new THREE.PlaneGeometry(W2*2, CROSS_HALF*2).rotateX(-Math.PI/2), 0,0.012,0), 0x2f3033);
+    const walk = new THREE.BoxGeometry(3,0.16,CROSS_HALF*2);
+    W(xform(walk.clone(), -W2-1.5, 0.08, 0), 0xa8a89e);
+    W(xform(walk.clone(),  W2+1.5, 0.08, 0), 0xa8a89e);
+  }
+  W(stripGeo(RING,-0.22,0.030,-0.10,0.030,NSEG), 0xd9b32a);
+  W(stripGeo(RING, 0.10,0.030, 0.22,0.030,NSEG), 0xd9b32a);
+
+  for (let s = 0; s < L; s += 14) {
+    const p = RING.at(s), rx=-p.tz, rz=p.tx, ry=Math.atan2(p.tx,p.tz);
+    for (const off of [-3,3])
+      W(xform(new THREE.BoxGeometry(0.16,0.02,3.4), p.x+rx*off, 0.030, p.z+rz*off, 0,ry,0), 0xdedbcc);
+  }
+  for (let z=-CROSS_HALF; z<CROSS_HALF; z+=14)
+    W(xform(new THREE.BoxGeometry(0.16,0.02,3.4), 0,0.030,z), 0xdedbcc);
+
+  {
+    const pal = [0x8d8577,0x9a8f7e,0x7d7a73,0xa39684,0x6f6a63,0xb0a48f];
+    const inRing  = (x,z)=> Math.abs(x)<76&&Math.abs(z)<58;
+    const onCross = (x)=> Math.abs(x)<12;
+    for (let gx=-160; gx<=160; gx+=34)
+      for (let gz=-140; gz<=140; gz+=34) {
+        const x=gx+rr(-5,5), z=gz+rr(-5,5);
+        if (inRing(x,z)||onCross(x)) continue;
+        if (inPitchZone(x,z,10)||inSchoolZone(x,z,6)) continue;
+        if (rnd()<0.25) continue;
+        const w=rr(9,19), d=rr(9,19), h=rr(7,30);
+        const col = pal[(rnd()*pal.length)|0];
+        W(xform(new THREE.BoxGeometry(w,h,d), x,h/2,z, 0,rr(-0.25,0.25),0), col);
+        W(xform(new THREE.BoxGeometry(w*1.05,0.7,d*1.05), x,h+0.35,z), 0x5b5750);
+        if (rnd()<0.5)
+          W(xform(new THREE.BoxGeometry(rr(2.5,4.5),2.2,rr(2.5,4.5)),
+                  x+rr(-w*0.25,w*0.25), h+1.5, z+rr(-d*0.25,d*0.25)), 0x8a6b4a);
+      }
+  }
+
+  for (let i = 0; i < 25; i++) {
+    const s=rnd()*L, side=rnd()<0.5?1:-1;
+    const p=RING.at(s), rx=-p.tz, rz=p.tx;
+    const d=side*rr(12,20);
+    const x=p.x+rx*d, z=p.z+rz*d;
+    if (inPitchZone(x,z,4)||inSchoolZone(x,z,3)) continue;
+    const h=rr(5,9);
+    W(xform(new THREE.CylinderGeometry(0.20,0.32,h,5), x,h/2,z), 0x6b5340);
+    for (let f=0; f<4; f++) {
+      const a=(f/4)*TAU+rnd();
+      W(xform(new THREE.ConeGeometry(0.55,3.2,3),
+              x+Math.cos(a)*0.9, h+0.5, z+Math.sin(a)*0.9,
+              Math.cos(a)*1.15, 0, -Math.sin(a)*1.15), 0x3f7d3a);
     }
-}
-
-for (let i=0; i<60; i++) {
-  const s=rnd()*L, side=rnd()<0.5?1:-1;
-  const p=RING.at(s), rx=-p.tz, rz=p.tx;
-  const d=side*rr(12,20);
-  const x=p.x+rx*d, z=p.z+rz*d;
-  if (inPitchZone(x,z,4)||inSchoolZone(x,z,3)) continue;
-  const h=rr(5,9);
-  W(xform(new THREE.CylinderGeometry(0.20,0.32,h,6), x,h/2,z), 0x6b5340);
-  for (let f=0; f<5; f++) {
-    const a=(f/5)*TAU+rnd();
-    W(xform(new THREE.ConeGeometry(0.55,3.2,4),
-            x+Math.cos(a)*0.9, h+0.5, z+Math.sin(a)*0.9,
-            Math.cos(a)*1.15, 0, -Math.sin(a)*1.15), 0x3f7d3a);
   }
-}
 
-/* ---- pitch, goals, school ---- */
-{
-  const B = PB;
-  const NSTRIPE = 8, sw = PITCH.w / NSTRIPE;
-  for (let i=0; i<NSTRIPE; i++) {
-    const col = (i%2===0) ? 0x3f8a3a : 0x357a32;
-    W(xform(new THREE.BoxGeometry(sw, 0.12, PITCH.h),
-            B.minX + sw*(i+0.5), -0.04, PITCH.cz), col);
-  }
-  const LW=0.12, LY=0.027;
-  W(xform(new THREE.BoxGeometry(PITCH.w,0.012,LW), PITCH.cx,LY,B.minZ), 0xffffff);
-  W(xform(new THREE.BoxGeometry(PITCH.w,0.012,LW), PITCH.cx,LY,B.maxZ), 0xffffff);
-  W(xform(new THREE.BoxGeometry(LW,0.012,PITCH.h), B.minX,LY,PITCH.cz), 0xffffff);
-  W(xform(new THREE.BoxGeometry(LW,0.012,PITCH.h), B.maxX,LY,PITCH.cz), 0xffffff);
-  W(xform(new THREE.BoxGeometry(LW,0.012,PITCH.h), PITCH.cx,LY,PITCH.cz), 0xffffff);
-  W(xform(new THREE.TorusGeometry(3.0,LW*0.55,4,28), PITCH.cx,LY,PITCH.cz, -Math.PI/2,0,0), 0xffffff);
-  W(xform(new THREE.CylinderGeometry(0.13,0.13,0.014,8), PITCH.cx,LY,PITCH.cz), 0xffffff);
-
-  const FH=0.85, PR=0.045, SP2=2.2;
-  const gz0 = PITCH.cz - GOAL_W/2 - 0.35;
-  const gz1 = PITCH.cz + GOAL_W/2 + 0.35;
-  const fenceSeg = (x0,z0,x1,z1) => {
-    const dx=x1-x0, dz=z1-z0, len=Math.hypot(dx,dz);
-    if (len<0.01) return;
-    const n = Math.max(1, Math.round(len/SP2));
-    for (let i=0;i<=n;i++) {
-      const t=i/n;
-      W(xform(new THREE.CylinderGeometry(PR,PR,FH,6),
-              x0+dx*t, FH/2, z0+dz*t), 0x9a9a92);
+  {
+    const B = PB;
+    const NSTRIPE = 8, sw = PITCH.w / NSTRIPE;
+    for (let i=0; i<NSTRIPE; i++) {
+      const col = (i%2===0) ? 0x3f8a3a : 0x357a32;
+      W(xform(new THREE.BoxGeometry(sw, 0.12, PITCH.h),
+              B.minX + sw*(i+0.5), -0.04, PITCH.cz), col);
     }
-    const ry = Math.atan2(dx,dz);
-    for (const yy of [0.32, 0.74])
-      W(xform(new THREE.BoxGeometry(0.05,0.05,len),
-              (x0+x1)/2, yy, (z0+z1)/2, 0,ry,0), 0x9a9a92);
-  };
-  fenceSeg(B.minX,B.minZ, B.minX,gz0);
-  fenceSeg(B.minX,gz1,   B.minX,B.maxZ);
-  fenceSeg(B.maxX,B.minZ, B.maxX,gz0);
-  fenceSeg(B.maxX,gz1,   B.maxX,B.maxZ);
-  fenceSeg(B.minX,B.minZ, B.maxX,B.minZ);
-  fenceSeg(B.minX,B.maxZ, B.maxX,B.maxZ);
+    const LW=0.12, LY=0.027;
+    W(xform(new THREE.BoxGeometry(PITCH.w,0.012,LW), PITCH.cx,LY,B.minZ), 0xffffff);
+    W(xform(new THREE.BoxGeometry(PITCH.w,0.012,LW), PITCH.cx,LY,B.maxZ), 0xffffff);
+    W(xform(new THREE.BoxGeometry(LW,0.012,PITCH.h), B.minX,LY,PITCH.cz), 0xffffff);
+    W(xform(new THREE.BoxGeometry(LW,0.012,PITCH.h), B.maxX,LY,PITCH.cz), 0xffffff);
+    W(xform(new THREE.BoxGeometry(LW,0.012,PITCH.h), PITCH.cx,LY,PITCH.cz), 0xffffff);
+    W(xform(new THREE.TorusGeometry(3.0,LW*0.55,4,20), PITCH.cx,LY,PITCH.cz, -Math.PI/2,0,0), 0xffffff);
+    W(xform(new THREE.CylinderGeometry(0.13,0.13,0.014,6), PITCH.cx,LY,PITCH.cz), 0xffffff);
 
-  const addGoal = (gx, colr) => {
-    const pr=0.07;
-    W(xform(new THREE.CylinderGeometry(pr,pr,GOAL_H,8), gx, GOAL_H/2, PITCH.cz-GOAL_W/2), colr);
-    W(xform(new THREE.CylinderGeometry(pr,pr,GOAL_H,8), gx, GOAL_H/2, PITCH.cz+GOAL_W/2), colr);
-    W(xform(new THREE.CylinderGeometry(pr,pr,GOAL_W+pr*2,8), gx, GOAL_H, PITCH.cz, 0,0,Math.PI/2), colr);
-  };
-  addGoal(B.minX, 0xd8483a);
-  addGoal(B.maxX, 0x75AADB);
+    const FH=0.85, PR=0.045, SP2=2.5;
+    const gz0 = PITCH.cz - GOAL_W/2 - 0.35;
+    const gz1 = PITCH.cz + GOAL_W/2 + 0.35;
+    const fenceSeg = (x0,z0,x1,z1) => {
+      const dx=x1-x0, dz=z1-z0, len=Math.hypot(dx,dz);
+      if (len<0.01) return;
+      const n = Math.max(1, Math.round(len/SP2));
+      for (let i=0;i<=n;i++) {
+        const t=i/n;
+        W(xform(new THREE.CylinderGeometry(PR,PR,FH,5),
+                x0+dx*t, FH/2, z0+dz*t), 0x9a9a92);
+      }
+      const ry = Math.atan2(dx,dz);
+      for (const yy of [0.32, 0.74])
+        W(xform(new THREE.BoxGeometry(0.05,0.05,len),
+                (x0+x1)/2, yy, (z0+z1)/2, 0,ry,0), 0x9a9a92);
+    };
+    fenceSeg(B.minX,B.minZ, B.minX,gz0);
+    fenceSeg(B.minX,gz1,   B.minX,B.maxZ);
+    fenceSeg(B.maxX,B.minZ, B.maxX,gz0);
+    fenceSeg(B.maxX,gz1,   B.maxX,B.maxZ);
+    fenceSeg(B.minX,B.minZ, B.maxX,B.minZ);
+    fenceSeg(B.minX,B.maxZ, B.maxX,B.maxZ);
 
-  const s = SCHOOL;
-  W(xform(new THREE.BoxGeometry(s.w,s.h,s.d), s.x, s.h/2, s.z), 0xe6d9bd);
-  W(xform(new THREE.BoxGeometry(s.w+0.8,0.45,s.d+0.8), s.x, s.h+0.22, s.z), 0x8a4a3a);
-  for (let i=0;i<6;i++) {
-    const wx = s.x-s.w/2+2.0+i*3.2;
-    W(xform(new THREE.BoxGeometry(1.35,1.55,0.10), wx, 3.4, s.z+s.d/2+0.05), 0x3a5a7a);
+    const addGoal = (gx, colr) => {
+      const pr=0.07;
+      W(xform(new THREE.CylinderGeometry(pr,pr,GOAL_H,6), gx, GOAL_H/2, PITCH.cz-GOAL_W/2), colr);
+      W(xform(new THREE.CylinderGeometry(pr,pr,GOAL_H,6), gx, GOAL_H/2, PITCH.cz+GOAL_W/2), colr);
+      W(xform(new THREE.CylinderGeometry(pr,pr,GOAL_W+pr*2,6), gx, GOAL_H, PITCH.cz, 0,0,Math.PI/2), colr);
+    };
+    addGoal(B.minX, 0xd8483a);
+    addGoal(B.maxX, 0x75AADB);
+
+    const s = SCHOOL;
+    W(xform(new THREE.BoxGeometry(s.w,s.h,s.d), s.x, s.h/2, s.z), 0xe6d9bd);
+    W(xform(new THREE.BoxGeometry(s.w+0.8,0.45,s.d+0.8), s.x, s.h+0.22, s.z), 0x8a4a3a);
+    for (let i=0;i<5;i++) {
+      const wx = s.x-s.w/2+2.5+i*3.5;
+      W(xform(new THREE.BoxGeometry(1.35,1.55,0.10), wx, 3.4, s.z+s.d/2+0.05), 0x3a5a7a);
+    }
+    W(xform(new THREE.BoxGeometry(1.7,2.7,0.12), s.x-6.2, 1.35, s.z+s.d/2+0.06), 0x5a3a2a);
   }
-  W(xform(new THREE.BoxGeometry(1.7,2.7,0.12), s.x-6.2, 1.35, s.z+s.d/2+0.06), 0x5a3a2a);
-  W(xform(new THREE.BoxGeometry(7.0,1.05,0.16), s.x, s.h-0.55, s.z+s.d/2+0.09), 0x2a5a8a);
+
+  const geo = P(worldParts);
+  worldMesh = new THREE.Mesh(geo, MAT.world);
+  worldMesh.frustumCulled = false;
+  scene.add(worldMesh);
+  worldParts.length = 0;
 
   const makeNet = (gx) => {
-    const backX = gx===B.minX ? gx-GOAL_DEPTH : gx+GOAL_DEPTH;
+    const backX = gx===PB.minX ? gx-GOAL_DEPTH : gx+GOAL_DEPTH;
     const z0 = PITCH.cz-GOAL_W/2, z1 = PITCH.cz+GOAL_W/2;
-    const pos=[], NZ=7, NY=4;
+    const pos=[], NZ=6, NY=3;
     for (let i=0;i<=NZ;i++){const z=z0+(z1-z0)*i/NZ; pos.push(backX,0,z, backX,GOAL_H,z);}
     for (let j=0;j<=NY;j++){const y=GOAL_H*j/NY; pos.push(backX,y,z0, backX,y,z1);}
     for (const zz of [z0,z1]) for (let j=0;j<=NY;j++) {
@@ -593,33 +657,22 @@ for (let i=0; i<60; i++) {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
     return new THREE.LineSegments(g, new THREE.LineBasicMaterial({
-      color:0xd8d8d8, transparent:true, opacity:0.65 }));
+      color:0xd8d8d8, transparent:true, opacity:0.6 }));
   };
-  scene.add(makeNet(B.minX));
-  scene.add(makeNet(B.maxX));
-}
-
-{
-  const geo = P(worldParts);
-  const mesh = new THREE.Mesh(geo, MAT.world);
-  mesh.frustumCulled = false;
-  scene.add(mesh);
-  worldParts.length = 0;
+  scene.add(makeNet(PB.minX));
+  scene.add(makeNet(PB.maxX));
 }
 
 /* ============================================================================
-   5.  TRAFFIC LIGHTS
+   7.  TRAFFIC LIGHTS
    ========================================================================== */
-const LAMP_GEO = new THREE.CircleGeometry(0.17, 12);
+const LAMP_GEO = new THREE.CircleGeometry(0.17, 10);
 function makeTrafficLight() {
   const g = new THREE.Group();
   const housing = P([
-    [xform(new THREE.CylinderGeometry(0.09,0.13,5.6,8),0,2.8,0), 0x2b2f33],
+    [xform(new THREE.CylinderGeometry(0.09,0.13,5.6,6),0,2.8,0), 0x2b2f33],
     [xform(new THREE.BoxGeometry(0.34,0.24,0.34),0,0.12,0), 0x3a3f44],
-    [xform(new THREE.BoxGeometry(0.46,1.55,0.36),0,5.92,0), 0x1b1e20],
-    [xform(new THREE.BoxGeometry(0.48,0.07,0.22),0,6.53,0.12), 0x141618],
-    [xform(new THREE.BoxGeometry(0.48,0.07,0.22),0,6.00,0.12), 0x141618],
-    [xform(new THREE.BoxGeometry(0.48,0.07,0.22),0,5.47,0.12), 0x141618]
+    [xform(new THREE.BoxGeometry(0.46,1.55,0.36),0,5.92,0), 0x1b1e20]
   ]);
   g.add(new THREE.Mesh(housing, MAT.world));
   const mk = (y)=>{const m=new THREE.Mesh(LAMP_GEO, MAT.lampRedOff); m.position.set(0,y,0.19); g.add(m); return m;};
@@ -631,13 +684,15 @@ const TL_LAYOUT = [
   {x:-8.5,z:-51,ry: Math.PI/2},{x: 8.5,z:-33,ry:-Math.PI/2},
   {x: 8.5,z:-51,ry: Math.PI},  {x:-8.5,z:-33,ry: 0}
 ];
-const trafficLights = TL_LAYOUT.map(cfg => {
-  const tl = makeTrafficLight();
-  tl.group.position.set(cfg.x, 0, cfg.z);
-  tl.group.rotation.y = cfg.ry;
-  scene.add(tl.group); return tl;
-});
-
+function buildTrafficLights() {
+  for (const cfg of TL_LAYOUT) {
+    const tl = makeTrafficLight();
+    tl.group.position.set(cfg.x, 0, cfg.z);
+    tl.group.rotation.y = cfg.ry;
+    scene.add(tl.group);
+    trafficLights.push(tl);
+  }
+}
 const CYCLE = 28;
 function lightState(t) {
   const u = t % CYCLE;
@@ -659,16 +714,15 @@ function paintLights(st) {
 }
 
 /* ============================================================================
-   6.  VEHICLES
+   8.  VEHICLES
    ========================================================================== */
-const wheelCache = new Map();
 function wheelGeo(r, w) {
   const key = r+'|'+w;
   let g = wheelCache.get(key);
   if (g) return g;
   const list = [
-    [CY(r,r,w,12,0,0,0,0,0,Math.PI/2), 0x1b1b1b],
-    [CY(r*0.46,r*0.46,w*1.02,10,0,0,0,0,0,Math.PI/2), 0xb9b9b9]
+    [CY(r,r,w,10,0,0,0,0,0,Math.PI/2), 0x1b1b1b],
+    [CY(r*0.46,r*0.46,w*1.02,8,0,0,0,0,0,Math.PI/2), 0xb9b9b9]
   ];
   for (let i=0;i<3;i++) list.push([BX(w*1.30, r*1.55, 0.07, 0,0,0, i*Math.PI/3,0,0), 0xdcdcdc]);
   g = P(list); wheelCache.set(key, g); return g;
@@ -711,19 +765,13 @@ const DANFO_SPEC = (() => {
   V(BX(0.26,0.18,0.06,  0.80,1.02,-2.84), RED);
   V(BX(0.26,0.18,0.06, -0.80,1.02,-2.84), RED);
   V(BX(1.55,0.07,4.20, 0,2.58,-0.20), BLK);
-  V(BX(0.06,0.11,4.20,  0.72,2.55,-0.20), BLK);
-  V(BX(0.06,0.11,4.20, -0.72,2.55,-0.20), BLK);
   V(BX(1.88,0.06,5.00, 0,1.44,0), INT);
   V(BX(0.44,0.46,4.30,  0.62,1.69,-0.25), SEAT);
   V(BX(0.44,0.46,4.30, -0.62,1.69,-0.25), SEAT);
   V(BX(0.10,0.55,4.30,  0.86,1.94,-0.25), SEAT);
   V(BX(0.10,0.55,4.30, -0.86,1.94,-0.25), SEAT);
   V(BX(0.52,0.52,0.52, -0.55,1.74,2.05), INT);
-  V(BX(0.52,0.58,0.10, -0.55,1.94,1.80), INT);
   V(BX(1.85,0.14,0.36, 0,1.62,2.56), BLK);
-  V(xform(new THREE.TorusGeometry(0.16,0.032,5,10), -0.55,1.72,2.26, 1.15,0,0), 0x1d1d1d);
-  V(CY(0.03,0.03,0.42,6, -0.55,1.62,2.36, 1.15,0,0), 0x2a2a2a);
-  V(CY(0.025,0.025,4.4,5, 0,2.36,-0.4, 0,0,Math.PI/2), 0x8f9296);
   return s;
 })();
 
@@ -739,20 +787,16 @@ const KEKE_SPEC = (() => {
   for (const sx of [-1,1]) {
     V(BX(0.07,0.98,0.07, sx*0.66,1.34, 1.02), MET);
     V(BX(0.07,0.98,0.07, sx*0.66,1.34,-1.16), MET);
-    V(BX(1.40,0.06,0.06, 0,0.44, sx*1.05), BLK);
   }
   V(BX(0.95,0.32,0.48, 0,0.86,-0.72), SEAT);
-  V(BX(0.95,0.34,0.09, 0,1.06,-0.95), SEAT);
   V(BX(0.60,0.40,0.44, 0,0.78, 0.40), INT);
-  V(CY(0.028,0.028,0.72,6, 0,1.08,0.92, 0,0,Math.PI/2), MET);
-  V(CY(0.05,0.05,0.70,6, 0,0.60,1.02, 0.30,0,0), MET);
   V(BX(0.24,0.20,0.09, 0,0.98,1.30), LAMP);
   V(BX(1.42,0.20,0.16, 0,0.48,-1.30), BLK);
   return s;
 })();
 
 const OKADA_SPEC = (() => {
-  const BLK=0x141414, MET=0x9aa0a6, RED=0xc0392b, SKIN=0x6b4a33;
+  const BLK=0x141414, MET=0x9aa0a6, RED=0xc0392b;
   const SHIRT=0x2f7d4f, LAMP=0xfff4c8;
   const s = { vehicle:[] };
   const V = (g,c)=> s.vehicle.push([g,c]);
@@ -760,28 +804,16 @@ const OKADA_SPEC = (() => {
   V(BX(0.34,0.36,0.44, 0,0.60,0.14), MET);
   V(BX(0.30,0.26,0.56, 0,0.88,0.24), RED);
   V(BX(0.34,0.12,0.62, 0,0.90,-0.30), BLK);
-  V(CY(0.026,0.026,0.64,6, 0,1.04,0.56, 0,0,Math.PI/2), MET);
-  V(BX(0.06,0.52,0.06,  0.12,0.72,0.62, 0.22,0,0), MET);
-  V(BX(0.06,0.52,0.06, -0.12,0.72,0.62, 0.22,0,0), MET);
-  V(CY(0.11,0.11,0.09,8, 0,1.00,0.70, Math.PI/2,0,0), LAMP);
-  V(CY(0.05,0.05,0.95,6, 0.20,0.34,-0.30, Math.PI/2,0,0), MET);
-  V(BX(0.10,0.10,0.12, 0,0.94,-0.62), RED);
+  V(CY(0.026,0.026,0.64,5, 0,1.04,0.56, 0,0,Math.PI/2), MET);
+  V(CY(0.11,0.11,0.09,6, 0,1.00,0.70, Math.PI/2,0,0), LAMP);
   V(BX(0.36,0.54,0.30, 0,1.24,-0.22), SHIRT);
-  V(SP(0.145, 0,1.62,-0.20), BLK);
-  V(SP(0.09, 0,1.60,-0.06, 6), 0x2a3a4a);
+  V(SP(0.145, 0,1.62,-0.20, 6), BLK);
   V(BX(0.10,0.10,0.58,  0.20,1.30,0.03, -0.55,0,0), SHIRT);
   V(BX(0.10,0.10,0.58, -0.20,1.30,0.03, -0.55,0,0), SHIRT);
   V(BX(0.13,0.44,0.17,  0.15,0.80,-0.30), 0x2b2b33);
   V(BX(0.13,0.44,0.17, -0.15,0.80,-0.30), 0x2b2b33);
   return s;
 })();
-
-const TEMPLATES = {
-  danfo: buildGroup(DANFO_SPEC),
-  keke : buildGroup(KEKE_SPEC),
-  okada: buildGroup(OKADA_SPEC)
-};
-const SHADOW_GEO = new THREE.CircleGeometry(1, 12).rotateX(-Math.PI/2);
 
 const TYPES = {
   danfo: { len:5.60, v0:13.5, aMax:1.60, wheelR:0.46, wheelW:0.30,
@@ -794,12 +826,6 @@ const TYPES = {
            wheels:[[0,0.33,0.68],[0,0.33,-0.68]],
            shadow:[0.55,1.0] }
 };
-
-const LANES = [
-  { off:-4.5, dir:-1, veh:[] }, { off:-1.5, dir:-1, veh:[] },
-  { off: 1.5, dir: 1, veh:[] }, { off: 4.5, dir: 1, veh:[] }
-];
-const CROSS_LANES = [ { x:-2.5, dir: 1, veh:[] }, { x: 2.5, dir:-1, veh:[] } ];
 
 class RingVehicle {
   constructor(type, lane, p) {
@@ -841,10 +867,14 @@ class CrossVehicle {
     scene.add(this.obj);
   }
 }
-{
+
+function buildVehicles() {
+  TEMPLATES.danfo = buildGroup(DANFO_SPEC);
+  TEMPLATES.keke  = buildGroup(KEKE_SPEC);
+  TEMPLATES.okada = buildGroup(OKADA_SPEC);
   const mix = ['danfo','danfo','keke','okada'];
   for (const lane of LANES) {
-    const n=4, spacing=L/n;
+    const n = 3, spacing = L/n;
     for (let i=0;i<n;i++) {
       const type = mix[(rnd()*mix.length)|0];
       const p0 = i*spacing + rr(-0.22,0.22)*spacing;
@@ -853,30 +883,29 @@ class CrossVehicle {
     }
   }
   for (const lane of CROSS_LANES)
-    for (let i=0;i<3;i++) {
+    for (let i=0;i<2;i++) {
       const type = rnd()<0.5 ? 'danfo' : 'keke';
-      lane.veh.push(new CrossVehicle(type, lane, i*(CROSS_LEN/3)+rr(-14,14)));
+      lane.veh.push(new CrossVehicle(type, lane, i*(CROSS_LEN/2)+rr(-14,14)));
     }
 }
 
 /* ============================================================================
-   7.  VENDORS
+   9.  VENDORS
    ========================================================================== */
-const vendorGroups = [];
 function buildVendor(kind) {
   const G = [];
   const box  = (w,h,d,x,y,z,c,rx=0,ry=0,rz=0)=>G.push([xform(new THREE.BoxGeometry(w,h,d),x,y,z,rx,ry,rz),c]);
   const cyl  = (rt,rb,h,seg,x,y,z,c,rx=0,ry=0,rz=0)=>G.push([xform(new THREE.CylinderGeometry(rt,rb,h,seg),x,y,z,rx,ry,rz),c]);
   const cone = (r,h,seg,x,y,z,c)=>G.push([xform(new THREE.ConeGeometry(r,h,seg),x,y,z),c]);
-  const sph  = (r,x,y,z,c)=>G.push([xform(new THREE.SphereGeometry(r,7,5),x,y,z),c]);
+  const sph  = (r,x,y,z,c)=>G.push([xform(new THREE.SphereGeometry(r,6,4),x,y,z),c]);
   const WOOD=0x8a6a42, MET=0x9aa0a6, SKIN=0x6b4a33, DARK=0x2b2b33;
   const UMB = [0xd0392b,0x2f8f5b,0xe0a41c,0x2b6fd0][(rnd()*4)|0];
   const SH  = [0x2f7d4f,0xc0392b,0x2b6fd0,0xe0a41c][(rnd()*4)|0];
   box(1.55,0.08,0.82, 0,0.80,0, WOOD);
   for (const sx of [-1,1]) for (const sz of [-1,1])
     box(0.08,0.80,0.08, sx*0.70,0.40, sz*0.33, WOOD);
-  cyl(0.035,0.035,2.30,6, 0,1.60,-0.42, MET);
-  cone(1.30,0.55,8, 0,2.92,-0.42, UMB);
+  cyl(0.035,0.035,2.30,5, 0,1.60,-0.42, MET);
+  cone(1.30,0.55,6, 0,2.92,-0.42, UMB);
   box(0.36,0.82,0.28, 0,0.41,-1.02, DARK);
   box(0.46,0.62,0.30, 0,1.10,-1.02, SH);
   sph(0.145, 0,1.56,-1.02, SKIN);
@@ -885,25 +914,24 @@ function buildVendor(kind) {
   if (kind === 'suya') {
     box(1.00,0.10,0.50, 0,0.88,0, 0x2a2a2a);
     box(1.00,0.06,0.50, 0,0.86,0, 0x8a2a12);
-    for (let i=0;i<7;i++) box(0.035,0.035,0.80, -0.40+i*0.13,0.98,0, 0x6b3a1e);
   } else if (kind === 'akara') {
-    cyl(0.36,0.34,0.14,12, 0,0.90,0, 0x30302f);
-    cyl(0.30,0.30,0.04,12, 0,0.96,0, 0x9a6a20);
-    for (let i=0;i<5;i++) sph(0.07, rr(-0.2,0.2),0.98, rr(-0.2,0.2), 0xc99a3a);
+    cyl(0.36,0.34,0.14,10, 0,0.90,0, 0x30302f);
+    cyl(0.30,0.30,0.04,10, 0,0.96,0, 0x9a6a20);
+    for (let i=0;i<4;i++) sph(0.07, rr(-0.2,0.2),0.98, rr(-0.2,0.2), 0xc99a3a);
   } else if (kind === 'corn') {
     box(0.90,0.08,0.55, 0,0.86,0, 0x2a2a2a);
-    for (let i=0;i<8;i++)
-      cyl(0.055,0.055,0.42,6, rr(-0.36,0.36),0.94, rr(-0.16,0.16), 0xe0c040, 0,0,Math.PI/2);
+    for (let i=0;i<5;i++)
+      cyl(0.055,0.055,0.42,5, rr(-0.36,0.36),0.94, rr(-0.16,0.16), 0xe0c040, 0,0,Math.PI/2);
   } else {
-    for (let s=0;s<3;s++) for (let i=0;i<4;i++)
+    for (let s=0;s<2;s++) for (let i=0;i<4;i++)
       box(0.20,0.09,0.26, -0.45+i*0.30, 0.87+s*0.10, s*0.16-0.16, 0xbfe3f0);
   }
   return new THREE.Mesh(P(G), MAT.vehicle);
 }
-{
+function buildVendors() {
   const kinds = ['suya','akara','corn','pure'];
-  for (let i=0;i<14;i++) {
-    const s = (i/14)*L + rr(-8,8);
+  for (let i=0;i<8;i++) {
+    const s = (i/8)*L + rr(-8,8);
     const side = rnd()<0.62 ? 1 : -1;
     const p = RING.at(s), rx=-p.tz, rz=p.tx;
     const d = side*rr(11.5,14.5);
@@ -920,7 +948,7 @@ function buildVendor(kind) {
 }
 
 /* ============================================================================
-   8.  TRAFFIC SIM
+   10.  TRAFFIC SIM
    ========================================================================== */
 function idm(v, gap, dv) {
   const s0=2.0, T=1.15, b=2.4, a=v.aMax;
@@ -930,7 +958,7 @@ function idm(v, gap, dv) {
   return a * (free - (sStar*sStar)/(gap*gap));
 }
 const _p = {};
-function updateRingTraffic(dt, t, st) {
+function updateRingTraffic(dt, st) {
   const stop = ringStopOf(st);
   for (const lane of LANES) {
     const vs = lane.veh, n = vs.length; if (!n) continue;
@@ -957,7 +985,7 @@ function updateRingTraffic(dt, t, st) {
     }
   }
 }
-function updateCrossTraffic(dt, t, st) {
+function updateCrossTraffic(dt, st) {
   const stop = crossStopOf(st);
   for (const lane of CROSS_LANES) {
     const vs = lane.veh, n = vs.length; if (!n) continue;
@@ -1012,14 +1040,14 @@ function placeCrossVehicle(v, dt) {
 }
 
 /* ============================================================================
-   9.  AUDIO
+   11.  AUDIO
    ========================================================================== */
 let audioCtx = null, noiseBuf = null;
 function ensureAudio() {
   if (audioCtx) { if (audioCtx.state === 'suspended') audioCtx.resume(); return; }
   try {
     audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-    const len = Math.floor(audioCtx.sampleRate * 1.6);
+    const len = Math.floor(audioCtx.sampleRate * 1.2);
     noiseBuf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
     const d = noiseBuf.getChannelData(0);
     for (let i=0; i<len; i++) d[i] = Math.random()*2-1;
@@ -1092,7 +1120,7 @@ function playCheer() {
   g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
   src.connect(bp).connect(g).connect(audioCtx.destination);
   src.start(t); src.stop(t+dur+0.05);
-  for (let i=0; i<4; i++) {
+  for (let i=0; i<3; i++) {
     const o = audioCtx.createOscillator();
     o.type='sawtooth';
     const bf = 290 + i*95;
@@ -1112,7 +1140,7 @@ function playCheer() {
 }
 
 /* ============================================================================
-   10.  TEAMS
+   12.  TEAMS
    ========================================================================== */
 const TEAM = { RED: 0, ARG: 1 };
 const TEAM_NAME = ['RED', 'ARG'];
@@ -1121,7 +1149,7 @@ const TEAM_OWN_GOAL   = [PB.maxX, PB.minX];
 const teamScore       = [0, 0];
 
 /* ============================================================================
-   11.  TEXTURES
+   13.  TEXTURES
    ========================================================================== */
 function roundRectPath(g, x, y, w, h, r) {
   g.beginPath();
@@ -1136,43 +1164,31 @@ function roundRectPath(g, x, y, w, h, r) {
   g.quadraticCurveTo(x, y, x + r, y);
   g.closePath();
 }
-
 function makeEmoteTexture() {
   const c = document.createElement('canvas');
   c.width = 256; c.height = 160;
   const g = c.getContext('2d');
-
   g.fillStyle = 'rgba(255,214,64,0.96)';
   g.strokeStyle = '#ffffff';
   g.lineWidth = 9;
   roundRectPath(g, 10, 10, 236, 106, 26);
   g.fill(); g.stroke();
-
   g.beginPath();
-  g.moveTo(104, 112);
-  g.lineTo(128, 152);
-  g.lineTo(152, 112);
+  g.moveTo(104, 112); g.lineTo(128, 152); g.lineTo(152, 112);
   g.closePath();
   g.fillStyle = 'rgba(255,214,64,0.96)';
   g.fill();
-  g.strokeStyle = '#ffffff';
-  g.lineWidth = 8;
-  g.stroke();
+  g.strokeStyle = '#ffffff'; g.lineWidth = 8; g.stroke();
   g.fillStyle = 'rgba(255,214,64,0.96)';
   g.fillRect(104, 104, 48, 12);
-
   g.fillStyle = '#3a2000';
   g.font = '900 70px ui-monospace, Menlo, Consolas, monospace';
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
   g.fillText('SUU!', 128, 66);
-
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 2;
   return tex;
 }
-
 function makeStripeTexture(c1, c2, bands) {
   const c = document.createElement('canvas');
   c.width = 128; c.height = 128;
@@ -1184,10 +1200,8 @@ function makeStripeTexture(c1, c2, bands) {
   }
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 2;
   return tex;
 }
-
 function makeNumberTexture(num, fg) {
   const c = document.createElement('canvas');
   c.width = c.height = 128;
@@ -1195,15 +1209,12 @@ function makeNumberTexture(num, fg) {
   g.clearRect(0, 0, 128, 128);
   g.fillStyle = fg;
   g.font = '900 100px ui-monospace, Menlo, Consolas, monospace';
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
   g.fillText(String(num), 64, 72);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 2;
   return tex;
 }
-
 function makeLogoTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = 128;
@@ -1218,12 +1229,10 @@ function makeLogoTexture() {
   g.stroke();
   g.fillStyle = '#ffd23f';
   g.font = '900 58px ui-monospace, Menlo, Consolas, monospace';
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
   g.fillText('eph', 64, 70);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 2;
   return tex;
 }
 
@@ -1235,7 +1244,7 @@ const ARG_STRIPE_TEX = makeStripeTexture('#ffffff', '#75AADB', 5);
 const EPH_LOGO_TEX   = makeLogoTexture();
 
 /* ============================================================================
-   12.  CHARACTER RIG
+   14.  CHARACTER RIG
    ========================================================================== */
 const HIP_Y       = 0.82;
 const THIGH_LEN   = 0.38;
@@ -1249,9 +1258,9 @@ const HIP_X       = 0.09;
 
 const GEO = {
   torso : BX(0.34, BODY_H, 0.20, 0, BODY_H*0.5, 0),
-  neck  : CY(0.055, 0.065, 0.10, 8, 0, BODY_H + 0.04, 0),
-  head  : SP(0.135, 0, 0, 0, 10),
-  hair  : SP(0.142, 0, 0.028, -0.012, 10),
+  neck  : CY(0.055, 0.065, 0.10, 6, 0, BODY_H + 0.04, 0),
+  head  : SP(0.135, 0, 0, 0, 8),
+  hair  : SP(0.142, 0, 0.028, -0.012, 8),
   thigh : BX(0.115, THIGH_LEN, 0.125, 0, -THIGH_LEN*0.5, 0),
   shin  : BX(0.100, SHIN_LEN,  0.110, 0, -SHIN_LEN*0.5, 0),
   foot  : BX(0.115, 0.075, 0.215, 0, -0.038, 0.045),
@@ -1267,7 +1276,6 @@ const FACE_MAT = new THREE.MeshBasicMaterial({ color: 0x101010 });
 function buildKid(shirtC, pantsC, skinC, hairC, opts) {
   opts = opts || {};
   const root = new THREE.Group();
-
   const hip = new THREE.Group();
   hip.position.y = HIP_Y;
   root.add(hip);
@@ -1278,7 +1286,6 @@ function buildKid(shirtC, pantsC, skinC, hairC, opts) {
     return m;
   };
 
-  /* torso — textured (stripes) or plain vertex coloured */
   if (opts.stripeTex) {
     const torsoMat = new THREE.MeshLambertMaterial({
       map: opts.stripeTex, color: 0xffffff
@@ -1289,7 +1296,6 @@ function buildKid(shirtC, pantsC, skinC, hairC, opts) {
   }
   addPart(GEO.neck, skinC);
 
-  /* head */
   const head = new THREE.Group();
   head.position.y = BODY_H + 0.24;
   hip.add(head);
@@ -1312,7 +1318,6 @@ function buildKid(shirtC, pantsC, skinC, hairC, opts) {
   mouthSmile.visible = false;
   head.add(mouthSmile);
 
-  /* number on the back */
   if (opts.number) {
     const tex = makeNumberTexture(opts.number, opts.numberFg || '#ffffff');
     const mat = new THREE.MeshBasicMaterial({
@@ -1324,8 +1329,6 @@ function buildKid(shirtC, pantsC, skinC, hairC, opts) {
     nm.rotation.y = Math.PI;
     hip.add(nm);
   }
-
-  /* chest logo */
   if (opts.logo) {
     const mat = new THREE.MeshBasicMaterial({
       map: EPH_LOGO_TEX, transparent: true, depthWrite: false,
@@ -1405,7 +1408,7 @@ function setExpression(rig, mode) {
 }
 
 /* ============================================================================
-   13.  POSE
+   15.  POSE
    ========================================================================== */
 function legCycle(p, s01, strideAmp, kneeAmp, footAmp) {
   const swing = Math.sin(p);
@@ -1422,11 +1425,9 @@ function armCycle(p, s01) {
     elbow: 0.18 + Math.max(0, swing) * 0.62 * s01 + 0.10 * s01
   };
 }
-
-function computePose(c, dt) {
+function computePose(c) {
   const s01   = clamp(c.speed / c.runSpeed, 0, 1);
   const phase = c.cyclePhase;
-
   const P = {
     hipY: HIP_Y, lean: 0,
     legL: { hip: 0, knee: 0.05, foot: 0 },
@@ -1434,7 +1435,6 @@ function computePose(c, dt) {
     armL: { shoulder: 0, elbow: 0.20 },
     armR: { shoulder: 0, elbow: 0.20 }
   };
-
   if (c.celebrateTimer > 0) {
     const k = clamp(c.celebrateTimer / c.celebrateDuration, 0, 1);
     const t = c.t;
@@ -1455,7 +1455,6 @@ function computePose(c, dt) {
     P.legR.foot = -0.12 * env;
     return P;
   }
-
   if (c.onGround) {
     if (s01 < 0.02) {
       const b = Math.sin(c.t * 1.6) * 0.012;
@@ -1464,8 +1463,6 @@ function computePose(c, dt) {
       P.legR.knee = 0.06 + b * 0.4;
       P.armL.elbow = 0.22 + b * 0.8;
       P.armR.elbow = 0.22 + b * 0.8;
-      P.armL.shoulder = Math.sin(c.t * 1.6) * 0.05;
-      P.armR.shoulder = -Math.sin(c.t * 1.6) * 0.05;
     } else {
       const pL = phase, pR = phase + Math.PI;
       P.lean = 0.06 + s01 * 0.30;
@@ -1474,9 +1471,6 @@ function computePose(c, dt) {
       P.legR = legCycle(pR, s01, 0.55 + s01*0.30, 1.05 + s01*0.55, 0.20 + s01*0.35);
       P.armL = armCycle(pR, s01);
       P.armR = armCycle(pL, s01);
-      const sway = Math.sin(phase) * 0.035 * s01;
-      P.armL.shoulder -= sway;
-      P.armR.shoulder -= sway;
     }
   } else {
     const upT = clamp(c.vel.y / 5.0, -1, 1);
@@ -1486,8 +1480,6 @@ function computePose(c, dt) {
       P.legR.hip = -lerp(0.00, 0.30, k);
       P.legL.knee =  lerp(0.30, 1.30, k);
       P.legR.knee =  lerp(0.20, 0.90, k);
-      P.legL.foot = -0.25;
-      P.legR.foot = -0.15;
       P.armL.shoulder = -lerp(0.30, 1.35, k);
       P.armR.shoulder = -lerp(0.30, 1.35, k);
       P.armL.elbow = 0.35; P.armR.elbow = 0.35;
@@ -1499,14 +1491,12 @@ function computePose(c, dt) {
       P.legR.hip = -lerp(0.05, 0.15, k);
       P.legL.knee =  lerp(0.30, 0.70, k);
       P.legR.knee =  lerp(0.30, 0.55, k);
-      P.legL.foot = -0.10; P.legR.foot = -0.10;
       P.armL.shoulder = lerp(-0.30, 0.20, k);
       P.armR.shoulder = lerp(-0.30, 0.20, k);
       P.armL.elbow = 0.30; P.armR.elbow = 0.30;
       P.lean = 0.05;
     }
   }
-
   if (c.landTimer > 0) {
     const k = c.landTimer / c.landDuration;
     const e = k * k;
@@ -1517,7 +1507,6 @@ function computePose(c, dt) {
     P.armL.shoulder -= 0.35 * e; P.armR.shoulder -= 0.35 * e;
     P.lean += 0.18 * e;
   }
-
   if (c.kickTimer > 0) {
     const k = c.kickTimer / c.kickDuration;
     const t = 1 - k;
@@ -1532,21 +1521,17 @@ function computePose(c, dt) {
     P.armR.shoulder =  swing * 0.40;
     P.lean += swing * 0.10;
   }
-
   return P;
 }
-
 function applyPose(rig, pose) {
   rig.hip.position.y = pose.hipY;
   rig.hip.rotation.x = -pose.lean;
-
   rig.legL.hip.rotation.x   = -pose.legL.hip;
   rig.legL.knee.rotation.x  =  pose.legL.knee;
   rig.legL.ankle.rotation.x =  pose.legL.foot;
   rig.legR.hip.rotation.x   = -pose.legR.hip;
   rig.legR.knee.rotation.x  =  pose.legR.knee;
   rig.legR.ankle.rotation.x =  pose.legR.foot;
-
   rig.armL.shoulder.rotation.x = -pose.armL.shoulder;
   rig.armL.elbow.rotation.x    =  pose.armL.elbow;
   rig.armR.shoulder.rotation.x = -pose.armR.shoulder;
@@ -1554,7 +1539,7 @@ function applyPose(rig, pose) {
 }
 
 /* ============================================================================
-   14.  CHARACTER CONTROLLER
+   16.  CONTROLLER
    ========================================================================== */
 const GRAVITY     = 22.0;
 const JUMP_VEL    = 7.2;
@@ -1566,51 +1551,35 @@ const AIR_ACCEL   = 4.5;
 const COYOTE      = 0.11;
 const JUMP_BUFFER = 0.14;
 const JUMP_CUT    = 0.42;
-
-/* Player can't leave the pitch — clamp INSIDE the fence line */
 const FIELD_INSET = 0.35;
 
 class Character {
   constructor(rig, x, z, yaw, team) {
-    this.rig = rig;
-    this.team = team;
+    this.rig = rig; this.team = team;
     this.pos = new THREE.Vector3(x, 0, z);
     this.vel = new THREE.Vector3();
-    this.yaw = yaw;
-    this.targetYaw = yaw;
+    this.yaw = yaw; this.targetYaw = yaw;
     this.onGround = true;
-    this.speed = 0;
-    this.runSpeed = RUN_SPEED;
-    this.cyclePhase = 0;
-    this.t = 0;
-    this.kickTimer = 0;
-    this.kickDuration = 0.42;
-    this.landTimer = 0;
-    this.landDuration = 0.24;
-    this.celebrateTimer = 0;
-    this.celebrateDuration = 2.4;
-    this.coyote = 0;
-    this.jumpBuffer = 0;
-    this.jumpHeld = false;
+    this.speed = 0; this.runSpeed = RUN_SPEED;
+    this.cyclePhase = 0; this.t = 0;
+    this.kickTimer = 0; this.kickDuration = 0.42;
+    this.landTimer = 0; this.landDuration = 0.24;
+    this.celebrateTimer = 0; this.celebrateDuration = 2.4;
+    this.coyote = 0; this.jumpBuffer = 0; this.jumpHeld = false;
   }
-
   kick() { this.kickTimer = this.kickDuration; }
   jump() { this.jumpBuffer = JUMP_BUFFER; }
   releaseJump() { this.jumpHeld = false; }
-
   celebrate() {
     this.celebrateTimer = this.celebrateDuration;
-    this.kickTimer = 0;
-    this.landTimer = 0;
+    this.kickTimer = 0; this.landTimer = 0;
     this.vel.set(0, 0, 0);
     setExpression(this.rig, 'suu');
   }
-
   update(dt, wishX, wishZ, wantJump, jumpHeld) {
     this.t += dt;
     if (this.kickTimer > 0) this.kickTimer -= dt;
     if (this.landTimer > 0) this.landTimer -= dt;
-
     if (this.celebrateTimer > 0) {
       this.celebrateTimer -= dt;
       wishX = 0; wishZ = 0; wantJump = false;
@@ -1618,44 +1587,33 @@ class Character {
       this.vel.z = damp(this.vel.z, 0, 12, dt);
       if (this.celebrateTimer <= 0) setExpression(this.rig, 'neutral');
     }
-
     if (wantJump) this.jumpBuffer = JUMP_BUFFER;
     if (this.jumpBuffer > 0) this.jumpBuffer -= dt;
     this.jumpHeld = jumpHeld;
-
     if (this.onGround) this.coyote = COYOTE;
     else if (this.coyote > 0) this.coyote -= dt;
-
     if (this.jumpBuffer > 0 && (this.onGround || this.coyote > 0) && this.celebrateTimer <= 0) {
       this.vel.y = JUMP_VEL;
       this.onGround = false;
-      this.coyote = 0;
-      this.jumpBuffer = 0;
-      this.landTimer = 0;
+      this.coyote = 0; this.jumpBuffer = 0; this.landTimer = 0;
     }
-
     const inputMag = Math.hypot(wishX, wishZ);
     const hasInput = inputMag > 0.02;
     let dx = 0, dz = 0;
     if (hasInput) { dx = wishX / inputMag; dz = wishZ / inputMag; }
-
     const targetSpeed = hasInput ? (WALK_SPEED + (RUN_SPEED - WALK_SPEED) * clamp(inputMag, 0, 1)) : 0;
     const accelRate = this.onGround ? (hasInput ? ACCEL : DECEL) : AIR_ACCEL;
-
     this.vel.x = damp(this.vel.x, dx * targetSpeed, accelRate, dt);
     this.vel.z = damp(this.vel.z, dz * targetSpeed, accelRate, dt);
-
     if (!this.onGround) {
       this.vel.y -= GRAVITY * dt;
       if (this.vel.y > 0 && !jumpHeld && this.jumpBuffer <= 0) {
         this.vel.y *= Math.pow(JUMP_CUT, dt * 60);
       }
     }
-
     this.pos.x += this.vel.x * dt;
     this.pos.z += this.vel.z * dt;
     this.pos.y += this.vel.y * dt;
-
     if (this.pos.y <= 0) {
       this.pos.y = 0;
       if (!this.onGround) {
@@ -1664,44 +1622,32 @@ class Character {
         this.onGround = true;
       }
       this.vel.y = 0;
-    } else {
-      this.onGround = false;
-    }
-
+    } else this.onGround = false;
     if (hasInput && this.onGround && this.celebrateTimer <= 0) {
       this.targetYaw = Math.atan2(dx, dz);
     }
     const dYaw = shortestAngle(this.yaw, this.targetYaw);
     this.yaw += dYaw * Math.min(1, dt * 13);
-
     const horizSpeed = Math.hypot(this.vel.x, this.vel.z);
     this.speed = horizSpeed;
     if (this.onGround && this.celebrateTimer <= 0) {
       const strideLen = 1.9 + (horizSpeed / RUN_SPEED) * 0.7;
       this.cyclePhase = mod(this.cyclePhase + (horizSpeed / strideLen) * TAU * dt, TAU);
     }
-
-    /* -------- FIELD BOUNDS: keep everyone inside the fence -------- */
-    const bx0 = PB.minX + FIELD_INSET;
-    const bx1 = PB.maxX - FIELD_INSET;
-    const bz0 = PB.minZ + FIELD_INSET;
-    const bz1 = PB.maxZ - FIELD_INSET;
-
+    const bx0 = PB.minX + FIELD_INSET, bx1 = PB.maxX - FIELD_INSET;
+    const bz0 = PB.minZ + FIELD_INSET, bz1 = PB.maxZ - FIELD_INSET;
     if (this.pos.x < bx0) { this.pos.x = bx0; this.vel.x = Math.max(0, this.vel.x); }
     if (this.pos.x > bx1) { this.pos.x = bx1; this.vel.x = Math.min(0, this.vel.x); }
     if (this.pos.z < bz0) { this.pos.z = bz0; this.vel.z = Math.max(0, this.vel.z); }
     if (this.pos.z > bz1) { this.pos.z = bz1; this.vel.z = Math.min(0, this.vel.z); }
-
     this.rig.root.position.copy(this.pos);
     this.rig.root.rotation.y = this.yaw;
-    applyPose(this.rig, computePose(this, dt));
-
+    applyPose(this.rig, computePose(this));
     if (this.celebrateTimer > 0) {
       const e = this.rig.face.emote;
       const s = 1 + Math.sin(this.t * 12) * 0.10;
       e.scale.set(1.00 * s, 0.625 * s, 1);
     }
-
     const h = this.pos.y;
     const sc = clamp(1 - h * 0.22, 0.35, 1);
     this.rig.shadow.scale.set(0.42 * sc, 1, 0.42 * sc);
@@ -1710,34 +1656,7 @@ class Character {
 }
 
 /* ============================================================================
-   15.  CLUB KITS
-   ========================================================================== */
-function kitFor(team) {
-  if (team === TEAM.RED) {
-    return {
-      shirt: 0xe63946,
-      pants: 0x1d3557,
-      skin:  0x8d5524,
-      hair:  0x1a1a1a,
-      stripeTex: null,
-      numColor: '#ffffff',
-      label: 'RED'
-    };
-  } else {
-    return {
-      shirt: 0x75AADB,
-      pants: 0x151515,
-      skin:  0x6b4a33,
-      hair:  0x0f0f0f,
-      stripeTex: ARG_STRIPE_TEX,
-      numColor: '#0a2a50',
-      label: 'ARG'
-    };
-  }
-}
-
-/* ============================================================================
-   16.  BALL
+   17.  BALL
    ========================================================================== */
 const BALL_R = 0.11;
 const GROUND_Y = 0.02;
@@ -1760,7 +1679,6 @@ function makeBallTexture() {
   }
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 2;
   return tex;
 }
 
@@ -1769,13 +1687,13 @@ const ball = {
   prevPos: new THREE.Vector3(),
   vel: new THREE.Vector3(),
   mesh: null,
-  goalCooldown: 0,
-  resetTimer: 0,
+  goalCooldown: 0, resetTimer: 0,
   lastKicker: null,
   spinAxis: new THREE.Vector3()
 };
-{
-  const geo = new THREE.SphereGeometry(BALL_R, 16, 12);
+
+function buildBall() {
+  const geo = new THREE.SphereGeometry(BALL_R, 12, 10);
   const mat = new THREE.MeshLambertMaterial({ map: makeBallTexture() });
   ball.mesh = new THREE.Mesh(geo, mat);
   ball.mesh.position.copy(ball.pos);
@@ -1783,14 +1701,14 @@ const ball = {
 }
 
 const kickRing = new THREE.Mesh(
-  new THREE.RingGeometry(0.28, 0.36, 20).rotateX(-Math.PI/2),
+  new THREE.RingGeometry(0.28, 0.36, 16).rotateX(-Math.PI/2),
   new THREE.MeshBasicMaterial({ color:0xffd23f, transparent:true, opacity:0.85,
                                 side:THREE.DoubleSide, depthWrite:false })
 );
 kickRing.visible = false;
 scene.add(kickRing);
 
-const FIXED_DT = 1/120;
+const FIXED_DT = 1/60;
 let ballAccum = 0;
 
 function resetBall() {
@@ -1801,7 +1719,6 @@ function resetBall() {
 
 function stepBall(dt) {
   ball.prevPos.copy(ball.pos);
-
   ball.vel.y -= 9.81 * dt;
   const sp = ball.vel.length();
   if (sp > 0.02) ball.vel.multiplyScalar(Math.exp(-0.20 * dt));
@@ -1899,16 +1816,15 @@ function checkGoal() {
 }
 
 /* ============================================================================
-   17.  GAME STATE (initialized after club pick)
+   18.  GAME STATE
    ========================================================================== */
-let player      = null;
-let npcs        = [];
-let playerTeam  = TEAM.RED;
+let player     = null;
+let npcs       = [];
+let playerTeam = TEAM.RED;
 
 const goalFlashEl = document.getElementById('goalFlash');
 const scoreTextEl = document.getElementById('scoreText');
-const scoreLblL   = document.getElementById('scoreTeamLeft');
-const scoreLblR   = document.getElementById('scoreTeamRight');
+const scoreBarEl  = document.getElementById('scoreBar');
 
 function updateScoreHUD() {
   scoreTextEl.textContent = `${teamScore[TEAM.RED]} – ${teamScore[TEAM.ARG]}`;
@@ -1917,7 +1833,6 @@ function updateScoreHUD() {
 function onGoal(scoringTeam) {
   teamScore[scoringTeam]++;
   updateScoreHUD();
-
   ball.goalCooldown = 3.2;
   ball.resetTimer = 2.4;
 
@@ -1925,7 +1840,6 @@ function onGoal(scoringTeam) {
   for (const ch of all) {
     if (ch.team === scoringTeam) ch.celebrate();
   }
-
   playCheer();
 
   const mine = scoringTeam === playerTeam;
@@ -1944,103 +1858,84 @@ function updateBall(dt) {
   }
   ballAccum += dt;
   let steps = 0;
-  while (ballAccum >= FIXED_DT && steps < 8) {
+  while (ballAccum >= FIXED_DT && steps < 4) {
     stepBall(FIXED_DT);
     checkGoal();
     ballAccum -= FIXED_DT;
     steps++;
   }
-  if (steps === 8) ballAccum = 0;
+  if (steps === 4) ballAccum = 0;
 
-  ball.mesh.position.copy(ball.pos);
-  const vx = ball.vel.x, vz = ball.vel.z;
-  const hs = Math.hypot(vx, vz);
-  if (hs > 0.02) {
-    ball.spinAxis.set(vz, 0, -vx).normalize();
-    ball.mesh.rotateOnWorldAxis(ball.spinAxis, (hs * dt) / BALL_R);
+  if (ball.mesh) {
+    ball.mesh.position.copy(ball.pos);
+    const vx = ball.vel.x, vz = ball.vel.z;
+    const hs = Math.hypot(vx, vz);
+    if (hs > 0.02) {
+      ball.spinAxis.set(vz, 0, -vx).normalize();
+      ball.mesh.rotateOnWorldAxis(ball.spinAxis, (hs * dt) / BALL_R);
+    }
   }
 }
 
 /* ============================================================================
-   18.  SPAWN PLAYER + NPCs
-   ----------------------------------------------------------------------------
-   Teams are 2v2. Player picks a club; that team is the "home" side.
-   Player wears #7. Teammate wears #9. Opponents wear #10 and #11.
+   19.  KITS + SPAWN
    ========================================================================== */
+function kitFor(team) {
+  if (team === TEAM.RED) {
+    return { shirt: 0xe63946, pants: 0x1d3557, skin: 0x8d5524, hair: 0x1a1a1a,
+             stripeTex: null, numColor: '#ffffff' };
+  }
+  return { shirt: 0x75AADB, pants: 0x151515, skin: 0x6b4a33, hair: 0x0f0f0f,
+           stripeTex: ARG_STRIPE_TEX, numColor: '#0a2a50' };
+}
+
 function spawnTeams(chosenTeam) {
   playerTeam = chosenTeam;
   const oppTeam = 1 - chosenTeam;
   const kp = kitFor(chosenTeam);
   const ko = kitFor(oppTeam);
 
-  /* score bar labels */
-  scoreLblL.textContent = TEAM_NAME[TEAM.RED];
-  scoreLblR.textContent = TEAM_NAME[TEAM.ARG];
-  scoreLblL.className = 't ' + (TEAM.RED === TEAM.RED ? 'r' : 'b');
-  scoreLblR.className = 't ' + (TEAM.ARG === TEAM.RED ? 'r' : 'b');
-
-  /* --- PLAYER --- */
+  /* Player — #7 with eph badge */
   const pRig = buildKid(kp.shirt, kp.pants, kp.skin, kp.hair, {
-    number: 7,
-    numberFg: kp.numColor,
-    logo: true,
-    stripeTex: kp.stripeTex
+    number: 7, numberFg: kp.numColor, logo: true, stripeTex: kp.stripeTex
   });
   scene.add(pRig.root);
-  player = new Character(
-    pRig,
-    PITCH.cx + 2,
-    PITCH.cz + 3,
-    -Math.PI / 2,
-    chosenTeam
-  );
+  player = new Character(pRig, PITCH.cx + 2, PITCH.cz + 3, -Math.PI/2, chosenTeam);
   pRig.root.position.copy(player.pos);
 
-  /* --- TEAMMATE (#9) --- */
+  /* Teammate — #9 */
   const tRig = buildKid(kp.shirt, kp.pants, kp.skin, kp.hair, {
-    number: 9,
-    numberFg: kp.numColor,
-    stripeTex: kp.stripeTex
+    number: 9, numberFg: kp.numColor, stripeTex: kp.stripeTex
   });
   scene.add(tRig.root);
   const tCh = new Character(tRig, PITCH.cx + 5, PITCH.cz - 4, rnd()*TAU, chosenTeam);
-  tCh.isNPC = true;
-  tCh.kickCd = rr(0.4, 1.6);
-  tCh.wanderX = tCh.pos.x;
-  tCh.wanderZ = tCh.pos.z;
+  tCh.isNPC = true; tCh.kickCd = rr(0.4, 1.6);
+  tCh.wanderX = tCh.pos.x; tCh.wanderZ = tCh.pos.z;
   npcs.push(tCh);
 
-  /* --- OPPONENT #10 --- */
+  /* Opponent #10 */
   const o1Rig = buildKid(ko.shirt, ko.pants, ko.skin, ko.hair, {
-    number: 10,
-    numberFg: ko.numColor,
-    stripeTex: ko.stripeTex
+    number: 10, numberFg: ko.numColor, stripeTex: ko.stripeTex
   });
   scene.add(o1Rig.root);
   const o1Ch = new Character(o1Rig, PITCH.cx - 7, PITCH.cz + 4, rnd()*TAU, oppTeam);
-  o1Ch.isNPC = true;
-  o1Ch.kickCd = rr(0.4, 1.6);
-  o1Ch.wanderX = o1Ch.pos.x;
-  o1Ch.wanderZ = o1Ch.pos.z;
+  o1Ch.isNPC = true; o1Ch.kickCd = rr(0.4, 1.6);
+  o1Ch.wanderX = o1Ch.pos.x; o1Ch.wanderZ = o1Ch.pos.z;
   npcs.push(o1Ch);
 
-  /* --- OPPONENT #11 --- */
+  /* Opponent #11 */
   const o2Rig = buildKid(ko.shirt, ko.pants, ko.skin, ko.hair, {
-    number: 11,
-    numberFg: ko.numColor,
-    stripeTex: ko.stripeTex
+    number: 11, numberFg: ko.numColor, stripeTex: ko.stripeTex
   });
   scene.add(o2Rig.root);
   const o2Ch = new Character(o2Rig, PITCH.cx - 3, PITCH.cz - 6, rnd()*TAU, oppTeam);
-  o2Ch.isNPC = true;
-  o2Ch.kickCd = rr(0.4, 1.6);
-  o2Ch.wanderX = o2Ch.pos.x;
-  o2Ch.wanderZ = o2Ch.pos.z;
+  o2Ch.isNPC = true; o2Ch.kickCd = rr(0.4, 1.6);
+  o2Ch.wanderX = o2Ch.pos.x; o2Ch.wanderZ = o2Ch.pos.z;
   npcs.push(o2Ch);
 }
 
 /* ============================================================================
-   19.  INPUT
+   20.  INPUT
    ========================================================================== */
 const keys = Object.create(null);
 let wantJumpThisFrame = false;
@@ -2053,23 +1948,15 @@ addEventListener('keydown', (e) => {
   if (k === ' ' || k.startsWith('arrow')) e.preventDefault();
   if (k === ' ' && !e.repeat) { wantJumpThisFrame = true; if (player) player.jump(); }
   if (k === 'f' && !e.repeat) doPlayerKick();
-});
+}, { passive: false });
 addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
 
-/* ============================================================================
-   20.  VIRTUAL JOYSTICKS  (left = move, right = camera)
-   ========================================================================== */
 class VirtualJoystick {
   constructor(zoneEl, baseEl, knobEl, radius) {
-    this.zone = zoneEl;
-    this.base = baseEl;
-    this.knob = knobEl;
+    this.zone = zoneEl; this.base = baseEl; this.knob = knobEl;
     this.radius = radius || 60;
-    this.id = null;
-    this.ox = 0; this.oy = 0;
-    this.dx = 0; this.dy = 0;
-    this.active = false;
-
+    this.id = null; this.ox = 0; this.oy = 0;
+    this.dx = 0; this.dy = 0; this.active = false;
     const self = this;
     zoneEl.addEventListener('pointerdown', (e) => self._start(e), { passive: false });
     zoneEl.addEventListener('pointermove', (e) => self._move(e), { passive: false });
@@ -2081,8 +1968,7 @@ class VirtualJoystick {
     e.preventDefault();
     ensureAudio();
     this.id = e.pointerId;
-    this.ox = e.clientX;
-    this.oy = e.clientY;
+    this.ox = e.clientX; this.oy = e.clientY;
     this.base.style.left = this.ox + 'px';
     this.base.style.top  = this.oy + 'px';
     this.knob.style.left = this.ox + 'px';
@@ -2101,44 +1987,39 @@ class VirtualJoystick {
     if (d > this.radius) { dx = dx/d*this.radius; dy = dy/d*this.radius; }
     this.knob.style.left = (this.ox + dx) + 'px';
     this.knob.style.top  = (this.oy + dy) + 'px';
-    this.dx = dx / this.radius;             // -1..1
-    this.dy = dy / this.radius;             // screen-down positive
+    this.dx = dx / this.radius;
+    this.dy = dy / this.radius;
   }
   _end(e) {
     if (e.pointerId !== this.id) return;
     e.preventDefault();
-    this.id = null;
-    this.dx = 0;
-    this.dy = 0;
+    this.id = null; this.dx = 0; this.dy = 0;
     this.base.classList.remove('on');
     this.knob.classList.remove('on');
     this.active = false;
   }
 }
 
-const joyL = new VirtualJoystick(
-  document.getElementById('joyZoneL'),
-  document.getElementById('joyBaseL'),
-  document.getElementById('joyKnobL'),
-  60
-);
-const joyR = new VirtualJoystick(
-  document.getElementById('joyZoneR'),
-  document.getElementById('joyBaseR'),
-  document.getElementById('joyKnobR'),
-  60
-);
+let joyL = null, joyR = null;
+function initJoysticks() {
+  joyL = new VirtualJoystick(
+    document.getElementById('joyZoneL'),
+    document.getElementById('joyBaseL'),
+    document.getElementById('joyKnobL'), 60
+  );
+  joyR = new VirtualJoystick(
+    document.getElementById('joyZoneR'),
+    document.getElementById('joyBaseR'),
+    document.getElementById('joyKnobR'), 60
+  );
+}
 
-/* ============================================================================
-   21.  ACTION BUTTONS
-   ========================================================================== */
 const btnJump = document.getElementById('btnJump');
 const btnKick = document.getElementById('btnKick');
 let jumpPointer = null;
 
 btnJump.addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  ensureAudio();
+  e.preventDefault(); ensureAudio();
   jumpPointer = e.pointerId;
   btnJump.classList.add('down');
   try { btnJump.setPointerCapture(e.pointerId); } catch (err) {}
@@ -2155,8 +2036,7 @@ btnJump.addEventListener('pointerup', jumpRelease);
 btnJump.addEventListener('pointercancel', jumpRelease);
 
 btnKick.addEventListener('pointerdown', (e) => {
-  e.preventDefault();
-  ensureAudio();
+  e.preventDefault(); ensureAudio();
   btnKick.classList.add('down');
   try { btnKick.setPointerCapture(e.pointerId); } catch (err) {}
   doPlayerKick();
@@ -2164,9 +2044,7 @@ btnKick.addEventListener('pointerdown', (e) => {
 btnKick.addEventListener('pointerup',   () => btnKick.classList.remove('down'));
 btnKick.addEventListener('pointercancel',() => btnKick.classList.remove('down'));
 
-/* ============================================================================
-   22.  CAMERA (mouse drag on canvas still works on desktop)
-   ========================================================================== */
+/* Camera drag on canvas */
 const camState = {
   yaw: 0, pitch: 0.45, dist: 7.5,
   targetYaw: 0, targetPitch: 0.45, targetDist: 7.5
@@ -2202,7 +2080,7 @@ renderer.domElement.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 /* ============================================================================
-   23.  KICK + PUSH
+   21.  KICK + PUSH
    ========================================================================== */
 const KICK_RANGE = 1.6;
 function doPlayerKick() {
@@ -2211,25 +2089,20 @@ function doPlayerKick() {
   const dz = ball.pos.z - player.pos.z;
   const d = Math.hypot(dx, dz);
   if (d > KICK_RANGE || ball.pos.y > 1.6) return;
-
   player.kick();
-
   let nx = dx / (d || 1), nz = dz / (d || 1);
   const fx = Math.sin(player.yaw), fz = Math.cos(player.yaw);
   nx = nx * 0.72 + fx * 0.28;
   nz = nz * 0.72 + fz * 0.28;
   const nl = Math.hypot(nx, nz) || 1;
   nx /= nl; nz /= nl;
-
   const runBonus = clamp(player.speed / RUN_SPEED, 0, 1);
   const power = 11.0 + runBonus * 4.5;
   const vy = 3.4 + rnd() * 1.8;
-
   ball.vel.set(nx * power, vy, nz * power);
   ball.lastKicker = player;
   playKick(1.0);
 }
-
 function playerBallPush() {
   if (!player || player.celebrateTimer > 0) return;
   const dx = ball.pos.x - player.pos.x;
@@ -2250,7 +2123,7 @@ function playerBallPush() {
 }
 
 /* ============================================================================
-   24.  TEAM AI
+   22.  TEAM AI
    ========================================================================== */
 function updateNPCs(dt) {
   const chaser = [null, null];
@@ -2260,32 +2133,22 @@ function updateNPCs(dt) {
     const d = Math.hypot(ball.pos.x - ch.pos.x, ball.pos.z - ch.pos.z);
     if (d < chaserD[ch.team]) { chaserD[ch.team] = d; chaser[ch.team] = ch; }
   }
-
   for (const ch of npcs) {
     ch.kickCd -= dt;
-
     if (ch.celebrateTimer > 0) {
       ch.update(dt, 0, 0, false, false);
       continue;
     }
-
     const targetGoalX = TEAM_SCORE_GOAL[ch.team];
     const ownGoalX    = TEAM_OWN_GOAL[ch.team];
-
     let wishX = 0, wishZ = 0;
     let wantKick = false;
-
     const bx = ball.pos.x, bz = ball.pos.z;
     const dx = bx - ch.pos.x, dz = bz - ch.pos.z;
     const dist = Math.hypot(dx, dz);
-
     if (ch === chaser[ch.team]) {
-      if (dist > 0.9) {
-        wishX = dx / dist;
-        wishZ = dz / dist;
-      } else if (ch.kickCd <= 0) {
-        wantKick = true;
-      }
+      if (dist > 0.9) { wishX = dx / dist; wishZ = dz / dist; }
+      else if (ch.kickCd <= 0) { wantKick = true; }
     } else {
       const tx = lerp(ownGoalX, bx, 0.45);
       const tz = lerp(PITCH.cz, bz, 0.55);
@@ -2296,26 +2159,20 @@ function updateNPCs(dt) {
         wishZ = (sdz / sd) * 0.65;
       }
     }
-
     ch.update(dt, wishX, wishZ, false, false);
-
     if (wantKick) {
       ch.kick();
-
       const gdx = targetGoalX - bx;
       const gdz = PITCH.cz - bz;
       const baseAng = Math.atan2(gdx, gdz);
       const ang = baseAng + (rnd() - 0.5) * 0.42;
       const power = 9.5 + rnd() * 4.0;
-
       ball.vel.set(Math.sin(ang) * power, 2.6 + rnd() * 2.0, Math.cos(ang) * power);
       ball.lastKicker = ch;
       ch.kickCd = 1.4 + rnd() * 1.6;
       playKick(0.6);
     }
   }
-
-  /* soft separation */
   const all = [player].concat(npcs).filter(Boolean);
   for (let i = 0; i < all.length; i++) {
     for (let j = i + 1; j < all.length; j++) {
@@ -2336,7 +2193,7 @@ function updateNPCs(dt) {
 }
 
 /* ============================================================================
-   25.  CAMERA UPDATE
+   23.  CAMERA
    ========================================================================== */
 const camLookAt = new THREE.Vector3();
 const camDesired = new THREE.Vector3();
@@ -2345,8 +2202,7 @@ const camRight = new THREE.Vector3();
 const WORLD_UP = new THREE.Vector3(0, 1, 0);
 
 function updateCamera(dt) {
-  /* right joystick drives camera rotation while held */
-  if (joyR.active) {
+  if (joyR && joyR.active) {
     const DEAD = 0.16;
     let rx = joyR.dx, ry = joyR.dy;
     if (Math.abs(rx) < DEAD) rx = 0;
@@ -2354,7 +2210,6 @@ function updateCamera(dt) {
     camState.targetYaw   -= rx * 2.8 * dt;
     camState.targetPitch = clamp(camState.targetPitch + ry * 2.2 * dt, 0.12, 1.35);
   }
-
   camState.yaw   = damp(camState.yaw,   camState.targetYaw,   10, dt);
   camState.pitch = damp(camState.pitch, camState.targetPitch, 10, dt);
   camState.dist  = damp(camState.dist,  camState.targetDist,  8,  dt);
@@ -2362,18 +2217,12 @@ function updateCamera(dt) {
   const px = player ? player.pos.x : PITCH.cx;
   const pz = player ? player.pos.z : PITCH.cz;
   const py = 1.10;
-
   camLookAt.set(px, py, pz);
 
   const yaw = camState.yaw, pitch = camState.pitch, d = camState.dist;
   const horiz = Math.cos(pitch) * d;
   const vy = Math.sin(pitch) * d;
-
-  camDesired.set(
-    px + Math.sin(yaw) * horiz,
-    py + vy,
-    pz + Math.cos(yaw) * horiz
-  );
+  camDesired.set(px + Math.sin(yaw) * horiz, py + vy, pz + Math.cos(yaw) * horiz);
   if (camDesired.y < 0.6) camDesired.y = 0.6;
 
   camera.position.lerp(camDesired, 1 - Math.exp(-dt * 8));
@@ -2386,45 +2235,41 @@ function updateCamera(dt) {
 }
 
 /* ============================================================================
-   26.  MAIN LOOP
+   24.  MAIN LOOP
    ========================================================================== */
 const statEl = document.getElementById('stat');
 let last = performance.now();
 let simTime = 0;
 let fpsAcc = 0, fpsFrames = 0, fps = 0;
+let loopRunning = false;
 const SIGNAL_NAMES = ['RING GREEN','RING YELLOW','ALL RED','CROSS GREEN','CROSS YELLOW'];
 
 function loop(now) {
   requestAnimationFrame(loop);
-
   const dt = Math.min((now - last) / 1000, 0.05);
   last = now;
   simTime += dt;
 
-  /* traffic */
   const st = lightState(simTime);
   paintLights(st);
-  updateRingTraffic(dt, simTime, st);
-  updateCrossTraffic(dt, simTime, st);
+  updateRingTraffic(dt, st);
+  updateCrossTraffic(dt, st);
   for (const lane of LANES)       for (const v of lane.veh) placeRingVehicle(v, dt, simTime);
   for (const lane of CROSS_LANES) for (const v of lane.veh) placeCrossVehicle(v, dt);
 
-  /* vendors */
   for (let i = 0; i < vendorGroups.length; i++) {
     const m = vendorGroups[i];
     m.position.y = m.userData.baseY + Math.sin(simTime * 1.6 + m.userData.phase) * 0.035;
   }
 
-  /* --- player input: keyboard + left joystick --- */
   let ix = 0, iz = 0;
   if (keys['w'] || keys['arrowup'])    iz += 1;
   if (keys['s'] || keys['arrowdown'])  iz -= 1;
   if (keys['a'] || keys['arrowleft'])  ix -= 1;
   if (keys['d'] || keys['arrowright']) ix += 1;
-
-  if (joyL.active || Math.abs(joyL.dx) > 0.001 || Math.abs(joyL.dy) > 0.001) {
+  if (joyL && (joyL.active || Math.abs(joyL.dx) > 0.001 || Math.abs(joyL.dy) > 0.001)) {
     ix = joyL.dx;
-    iz = -joyL.dy;      /* screen down → backward */
+    iz = -joyL.dy;
   }
 
   let wishX = camFwd.x * iz + camRight.x * ix;
@@ -2433,18 +2278,14 @@ function loop(now) {
   if (mm > 1) { wishX /= mm; wishZ /= mm; }
 
   const jumpHeld = !!keys[' '] || jumpPointer !== null;
-
-  if (player) {
-    player.update(dt, wishX, wishZ, wantJumpThisFrame, jumpHeld);
-  }
+  if (player) player.update(dt, wishX, wishZ, wantJumpThisFrame, jumpHeld);
   wantJumpThisFrame = false;
 
   playerBallPush();
   updateNPCs(dt);
   updateBall(dt);
 
-  /* kick indicator */
-  if (player) {
+  if (player && ball.mesh) {
     const bdx = ball.pos.x - player.pos.x;
     const bdz = ball.pos.z - player.pos.z;
     const bd = Math.hypot(bdx, bdz);
@@ -2484,25 +2325,71 @@ addEventListener('resize', () => {
 });
 
 /* ============================================================================
-   27.  CLUB PICKER → START
+   25.  START GAME (called by the picker)
    ========================================================================== */
-const clubPicker = document.getElementById('clubPicker');
+async function startGame(team) {
+  const picker = document.getElementById('clubPicker');
+  const select = document.getElementById('cpSelect');
+  const loader = document.getElementById('cpLoader');
+  const label  = document.getElementById('cpLoadLabel');
+  const bar    = document.getElementById('cpBar');
 
-document.querySelectorAll('.cp-btn').forEach(btn => {
-  btn.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    ensureAudio();
-    const team = parseInt(btn.dataset.team, 10) || 0;
-    clubPicker.style.display = 'none';
-    spawnTeams(team);
+  if (select) select.style.display = 'none';
+  if (loader) loader.classList.add('on');
+
+  const step = async (pct, text) => {
+    if (label) label.textContent = text;
+    if (bar) bar.style.width = pct + '%';
+    await yieldFrame();
+  };
+
+  try {
+    await step(10, 'BUILDING WORLD…');    buildWorld();
+    await step(35, 'PLACING LIGHTS…');    buildTrafficLights();
+    await step(55, 'SPAWNING TRAFFIC…');  buildVehicles();
+    await step(70, 'SETTING UP STALLS…'); buildVendors();
+    await step(82, 'BUILDING BALL…');     buildBall();
+    await step(92, 'SPAWNING TEAMS…');    spawnTeams(team);
+    await step(100, 'READY!');
+    initJoysticks();
+
+    /* show game UI */
+    scoreBarEl.classList.add('on');
+    document.getElementById('controls').classList.add('on');
     updateScoreHUD();
-    /* warm up: render one frame before the loop, then start */
-    camera.position.set(PITCH.cx + 2, 5, PITCH.cz + 12);
-    camera.lookAt(PITCH.cx, 1, PITCH.cz);
+
+    /* warm-up frame */
+    const pRig = player.rig.root;
+    camera.position.set(pRig.position.x + 5, 5, pRig.position.z + 10);
+    camera.lookAt(pRig.position.x, 1, pRig.position.z);
     renderer.render(scene, camera);
-    requestAnimationFrame(loop);
-  }, { passive: false });
-});
+
+    /* fade out picker */
+    picker.classList.add('gone');
+    setTimeout(() => { picker.style.display = 'none'; }, 450);
+
+    /* kick off the loop */
+    if (!loopRunning) {
+      loopRunning = true;
+      last = performance.now();
+      requestAnimationFrame(loop);
+    }
+  } catch (err) {
+    console.error('startGame failed', err);
+    if (label) label.textContent = 'ERROR: ' + err.message;
+  }
+}
+
+/* Expose to the plain script */
+window.__startGame = startGame;
+window.__moduleReady = true;
+
+/* If the user already tapped before we were ready, honour their pick */
+if (window.__pendingTeam !== null && window.__pendingTeam !== undefined) {
+  const t = window.__pendingTeam;
+  window.__pendingTeam = null;
+  startGame(t);
+}
 
 ['pointerdown', 'touchstart', 'keydown'].forEach(evt =>
   addEventListener(evt, ensureAudio, { once: true, passive: true }));
