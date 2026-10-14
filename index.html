@@ -18,7 +18,6 @@
     touch-action:none;
   }
 
-  /* ---- Desktop: iPhone 14 Pro frame ---- */
   body{
     display:flex;align-items:center;justify-content:center;min-height:100vh;
     background:radial-gradient(ellipse at center,#1a1a2e 0%,#050508 100%);
@@ -42,7 +41,6 @@
     #phone{width:100vw;height:100vh;height:100dvh;border-radius:0;box-shadow:none}
   }
 
-  /* ---- Wallpaper ---- */
   #wallpaper{
     position:absolute;inset:0;
     background:
@@ -58,7 +56,6 @@
   #wallpaper::before{width:280px;height:280px;background:#5b3fff;top:-60px;left:-40px}
   #wallpaper::after{width:320px;height:320px;background:#ff4f7a;bottom:-100px;right:-70px}
 
-  /* ---- Dynamic Island ---- */
   #island{
     position:absolute;top:calc(11px + env(safe-area-inset-top,0px));
     left:50%;transform:translateX(-50%);
@@ -70,7 +67,6 @@
     #island{width:110px;height:32px;top:calc(8px + env(safe-area-inset-top,0px))}
   }
 
-  /* ---- Status bar ---- */
   #statusbar{
     position:absolute;top:0;left:0;right:0;
     height:calc(52px + env(safe-area-inset-top,0px));
@@ -86,7 +82,6 @@
     #statusbar{padding-left:20px;padding-right:20px;height:calc(46px + env(safe-area-inset-top,0px));font-size:13px}
   }
 
-  /* ---- Home screen ---- */
   #homescreen{
     position:absolute;inset:0;z-index:5;
     padding:calc(58px + env(safe-area-inset-top,0px)) 22px
@@ -100,7 +95,7 @@
   }
 
   #widget{
-    text-align:center;color:#fff;margin:14px 0 34px;
+    text-align:center;color:#fff;margin:14px 0 26px;
     text-shadow:0 2px 14px rgba(0,0,0,.55);
   }
   #widgetDate{
@@ -108,18 +103,18 @@
     color:rgba(255,255,255,.85);margin-bottom:2px;
   }
   #widgetTime{
-    font-size:76px;font-weight:200;letter-spacing:-3px;line-height:1;
+    font-size:70px;font-weight:200;letter-spacing:-3px;line-height:1;
     font-variant-numeric:tabular-nums;
   }
   @media (max-height:740px){
-    #widget{margin:8px 0 22px}
-    #widgetTime{font-size:62px}
+    #widget{margin:8px 0 18px}
+    #widgetTime{font-size:58px}
   }
 
   #appgrid{
     display:grid;grid-template-columns:repeat(4,1fr);
-    gap:22px 18px;flex:1;align-content:start;
-    margin-top:6px;
+    gap:18px 18px;flex:1;align-content:start;
+    margin-top:4px;overflow-y:auto;
   }
   .app{
     background:none;border:none;padding:0;font:inherit;color:inherit;
@@ -148,7 +143,7 @@
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
   @media (max-width:520px){
-    #appgrid{grid-template-columns:repeat(4,1fr);gap:20px 14px}
+    #appgrid{grid-template-columns:repeat(4,1fr);gap:16px 14px}
     .icon{width:54px;height:54px;border-radius:13px}
     .app-label{font-size:10px;max-width:64px}
   }
@@ -168,7 +163,6 @@
     #dock{gap:14px;padding:10px 18px calc(12px + env(safe-area-inset-bottom,0px))}
   }
 
-  /* ---- App view (fullscreen iframe) ---- */
   #appview{
     position:absolute;inset:0;z-index:40;
     background:#000;
@@ -180,7 +174,6 @@
     width:100%;height:100%;border:0;display:block;background:#000;
   }
 
-  /* ---- Floating BACK button (top-left, safe area aware) ---- */
   #backbtn{
     position:absolute;
     top:calc(env(safe-area-inset-top,0px) + 52px);
@@ -204,7 +197,6 @@
   #backbtn:active{transform:scale(.94);background:rgba(255,210,63,.9);color:#3a2400}
   #backbtn svg{display:block;flex-shrink:0}
 
-  /* ---- Home indicator (raised above safe area) ---- */
   #homeindicator{
     position:absolute;
     bottom:calc(env(safe-area-inset-bottom,0px) + 8px);
@@ -221,7 +213,6 @@
   #appview.on ~ #homeindicator{opacity:.9}
   #homeindicator:active{background-color:#ffd23f;opacity:1}
 
-  /* ---- Launch flash overlay ---- */
   #flash{
     position:absolute;inset:0;background:#000;z-index:65;
     opacity:0;pointer-events:none;transition:opacity .25s;
@@ -295,7 +286,7 @@
         <span class="app-label">DOBO</span>
       </button>
 
-      <!-- PORTHARCOURT EPH (football) -->
+      <!-- FOOTBALL -->
       <button class="app" data-app="eph" aria-label="Launch Portharcourt EPH">
         <div class="icon">
           <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -347,6 +338,84 @@
         </div>
         <span class="app-label">KITE RUN</span>
       </button>
+
+      <!-- CLINMOJI -->
+      <button class="app" data-app="clinmoji" aria-label="Launch Clinmoji Character Studio">
+        <div class="icon">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="cjBg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#1a2333"/>
+                <stop offset="1" stop-color="#0e1116"/>
+              </linearGradient>
+              <linearGradient id="cjGold" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#f0c860"/>
+                <stop offset="1" stop-color="#c99a20"/>
+              </linearGradient>
+            </defs>
+            <rect width="100" height="100" fill="url(#cjBg)"/>
+            <path d="M 16 94 Q 16 60 50 60 Q 84 60 84 94 Z" fill="url(#cjGold)"/>
+            <circle cx="50" cy="38" r="22" fill="url(#cjGold)"/>
+            <circle cx="42" cy="36" r="2.6" fill="#1a1305"/>
+            <circle cx="58" cy="36" r="2.6" fill="#1a1305"/>
+            <path d="M 42 46 Q 50 54 58 46"
+                  stroke="#1a1305" stroke-width="2.2" fill="none"
+                  stroke-linecap="round"/>
+            <path d="M 28 34 Q 34 18 50 18 Q 66 18 72 34 Q 66 26 50 26 Q 34 26 28 34 Z"
+                  fill="#2a1a0e"/>
+          </svg>
+        </div>
+        <span class="app-label">CLINMOJI</span>
+      </button>
+
+      <!-- FERRIS WHEEL -->
+      <button class="app" data-app="wheel" aria-label="Launch Ferris Wheel Park">
+        <div class="icon">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="fwSky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#3d8ed0"/>
+                <stop offset="1" stop-color="#cfe4f7"/>
+              </linearGradient>
+            </defs>
+            <rect width="100" height="100" fill="url(#fwSky)"/>
+            <circle cx="70" cy="18" r="6" fill="#ffd23f" opacity=".85"/>
+            <!-- wheel -->
+            <circle cx="50" cy="42" r="24" fill="none" stroke="#e8eef5" stroke-width="2"/>
+            <circle cx="50" cy="42" r="22" fill="none" stroke="#b9c4d1" stroke-width="1"/>
+            <!-- spokes -->
+            <g stroke="#e8eef5" stroke-width="1.2">
+              <line x1="50" y1="42" x2="50" y2="18"/>
+              <line x1="50" y1="42" x2="50" y2="66"/>
+              <line x1="50" y1="42" x2="26" y2="42"/>
+              <line x1="50" y1="42" x2="74" y2="42"/>
+              <line x1="50" y1="42" x2="33" y2="25"/>
+              <line x1="50" y1="42" x2="67" y2="25"/>
+              <line x1="50" y1="42" x2="33" y2="59"/>
+              <line x1="50" y1="42" x2="67" y2="59"/>
+            </g>
+            <!-- hub -->
+            <circle cx="50" cy="42" r="3" fill="#7d8896"/>
+            <!-- gondolas -->
+            <rect x="47" y="15" width="6" height="5" rx="1" fill="#e74c3c"/>
+            <rect x="47" y="63" width="6" height="5" rx="1" fill="#f1c40f"/>
+            <rect x="23" y="39" width="6" height="5" rx="1" fill="#3498db"/>
+            <rect x="71" y="39" width="6" height="5" rx="1" fill="#2ecc71"/>
+            <rect x="30" y="21" width="6" height="5" rx="1" fill="#e67e22"/>
+            <rect x="64" y="21" width="6" height="5" rx="1" fill="#9b59b6"/>
+            <rect x="30" y="58" width="6" height="5" rx="1" fill="#1abc9c"/>
+            <rect x="64" y="58" width="6" height="5" rx="1" fill="#e84393"/>
+            <!-- support legs -->
+            <path d="M 50 42 L 40 82 L 60 82 Z"
+                  fill="none" stroke="#b9c4d1" stroke-width="2"/>
+            <line x1="42" y1="72" x2="58" y2="72" stroke="#b9c4d1" stroke-width="1.2"/>
+            <line x1="38" y1="82" x2="62" y2="82" stroke="#7d8896" stroke-width="2"/>
+            <!-- grass -->
+            <rect x="0" y="82" width="100" height="18" fill="#4c7d40"/>
+          </svg>
+        </div>
+        <span class="app-label">FERRIS WHEEL</span>
+      </button>
     </div>
 
     <div id="dock">
@@ -396,7 +465,21 @@
         </div>
         <span class="app-label">KITE RUN</span>
       </button>
-      <div></div>
+      <button class="app" data-app="clinmoji" aria-label="Clinmoji from dock">
+        <div class="icon">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100" height="100" fill="#161b23"/>
+            <path d="M 18 92 Q 18 62 50 62 Q 82 62 82 92 Z" fill="#e0b13c"/>
+            <circle cx="50" cy="40" r="20" fill="#e0b13c"/>
+            <circle cx="43" cy="38" r="2.4" fill="#1a1305"/>
+            <circle cx="57" cy="38" r="2.4" fill="#1a1305"/>
+            <path d="M 43 47 Q 50 53 57 47"
+                  stroke="#1a1305" stroke-width="2" fill="none"
+                  stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="app-label">CLINMOJI</span>
+      </button>
     </div>
   </div>
 
@@ -452,9 +535,11 @@
 
   /* ---------- App registry ---------- */
   const APPS = {
-    dobo: { file: 'dobo.html', title: 'DOBO' },
-    eph : { file: 'eph.html',  title: 'Portharcourt EPH' },
-    kite: { file: 'kite.html', title: 'Portharcourt Kite Run' }
+    dobo    : { file: 'dobo.html',     title: 'DOBO' },
+    eph     : { file: 'eph.html',      title: 'Portharcourt EPH' },
+    kite    : { file: 'kite.html',     title: 'Portharcourt Kite Run' },
+    clinmoji: { file: 'clinmoji.html', title: 'Clinmoji Character Studio' },
+    wheel   : { file: 'wheel.html',    title: 'Ferris Wheel Park' }
   };
   let currentApp = null;
 
@@ -527,14 +612,14 @@
 
   addEventListener('keydown', (e) => { if (e.key === 'Escape') goHome(); });
 
-  /* Prefetch all three games */
-  ['dobo.html','eph.html','kite.html'].forEach(url => {
+  /* Prefetch all five apps */
+  ['dobo.html','eph.html','kite.html','clinmoji.html','wheel.html'].forEach(url => {
     const l = document.createElement('link');
     l.rel = 'prefetch'; l.href = url;
     document.head.appendChild(l);
   });
 
-  console.log('%c HOME ', 'background:#ffd23f;color:#000;font-weight:900;padding:3px 8px;border-radius:4px;', 'Ready · 3 apps installed');
+  console.log('%c HOME ', 'background:#ffd23f;color:#000;font-weight:900;padding:3px 8px;border-radius:4px;', 'Ready · 5 apps installed');
 })();
 </script>
 </body>

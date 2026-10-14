@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Ferris Wheel Park — Three.js</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{width:100%;height:100%;overflow:hidden;background:#0b1622;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff;
+    touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
+  canvas{display:block}
+  #app{position:fixed;inset:0}
+
+  #crosshair{position:fixed;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;
+    pointer-events:none;opacity:.7;z-index:5}
+  #crosshair::before,#crosshair::after{content:"";position:absolute;background:#fff;
+    box-shadow:0 0 3px rgba(0,0,0,.8)}
+  #crosshair::before{left:7px;top:0;width:2px;height:16px}
+  #crosshair::after{top:7px;left:0;height:2px;width:16px}
+
+  #prompt{position:fixed;left:50%;top:calc(50% + 46px);transform:translateX(-50%);
+    padding:8px 16px;border-radius:8px;background:rgba(8,18,30,.72);
+    border:1px solid rgba(120,200,255,.35);font-size:14px;letter-spacing:.4px;
+    pointer-events:none;opacity:0;transition:opacity .18s;white-space:nowrap;z-index:6}
+  #prompt.on{opacity:1}
+
+  #hud{position:fixed;left:14px;bottom:14px;font-size:12px;line-height:1.7;
+    background:rgba(8,18,30,.55);border:1px solid rgba(120,200,255,.18);
+    padding:10px 14px;border-radius:10px;backdrop-filter:blur(6px);
+    pointer-events:none;z-index:6;max-width:250px}
+  #hud b{color:#7fd3ff;font-weight:600}
+
+  #stats{position:fixed;right:14px;top:14px;font-size:11px;font-variant-numeric:tabular-nums;
+    background:rgba(8,18,30,.55);border:1px solid rgba(120,200,255,.18);
+    padding:6px 10px;border-radius:8px;z-index:6;color:#9fd8ff}
+
+  #overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 40%,rgba(20,50,80,.85),rgba(4,10,18,.96));
+    z-index:20;transition:opacity .35s;text-align:center;padding:20px}
+  #overlay.hide{opacity:0;pointer-events:none}
+  .card{max-width:460px}
+  .card h1{font-size:26px;font-weight:700;letter-spacing:1px;
+    background:linear-gradient(90deg,#7fd3ff,#ffd166,#ff8a8a);
+    -webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:10px}
+  .card p{font-size:13px;line-height:1.8;color:#b8d4e8;margin-bottom:18px}
+  .card kbd{display:inline-block;background:#16304a;border:1px solid #2f5f88;
+    border-bottom-width:2px;border-radius:4px;padding:1px 6px;font-size:11px;
+    font-family:ui-monospace,monospace;color:#cfe9ff}
+  .card button{background:linear-gradient(180deg,#2b8fd6,#1462a0);border:0;color:#fff;
+    padding:14px 40px;font-size:15px;letter-spacing:1.5px;border-radius:8px;
+    cursor:pointer;font-weight:600;box-shadow:0 6px 20px rgba(30,130,200,.35);
+    transition:transform .12s,box-shadow .12s}
+  .card button:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(30,150,220,.5)}
+  .card .note{margin-top:14px;font-size:11px;color:#7fa8c8;letter-spacing:.4px}
+
+  /* ═══ MOBILE TOUCH UI ═══ */
+  #mobile-ui{display:none;position:fixed;inset:0;z-index:8;pointer-events:none}
+
+  #joy-base{position:absolute;left:max(22px,env(safe-area-inset-left));
+    bottom:max(28px,env(safe-area-inset-bottom));
+    width:132px;height:132px;border-radius:50%;
+    background:radial-gradient(circle,rgba(120,200,255,.14),rgba(30,70,110,.22));
+    border:2px solid rgba(150,215,255,.42);
+    box-shadow:inset 0 0 22px rgba(120,200,255,.16),0 0 20px rgba(60,150,220,.22);
+    pointer-events:auto;touch-action:none}
+  #joy-knob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;
+    border-radius:50%;pointer-events:none;
+    background:radial-gradient(circle at 35% 30%,#cfe9ff,#4a9ee0 65%,#1c5f96);
+    border:2px solid rgba(220,240,255,.85);
+    box-shadow:0 4px 16px rgba(0,0,0,.5),inset 0 -4px 8px rgba(0,0,0,.25);
+    transition:transform .05s linear}
+
+  .btn-zone{position:absolute;right:max(18px,env(safe-area-inset-right));
+    display:flex;flex-direction:column;gap:14px;align-items:flex-end;pointer-events:none}
+  #jump-wrap{top:26%}
+  #act-wrap{bottom:max(30px,env(safe-area-inset-bottom))}
+  .tbtn{pointer-events:auto;touch-action:none;
+    width:78px;height:78px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;letter-spacing:1px;color:#eaf6ff;
+    background:radial-gradient(circle at 35% 30%,rgba(120,200,255,.30),rgba(20,60,100,.55));
+    border:2px solid rgba(150,215,255,.55);
+    box-shadow:0 4px 16px rgba(0,0,0,.35),inset 0 0 14px rgba(120,200,255,.14);
+    text-shadow:0 1px 3px rgba(0,0,0,.6);user-select:none}
+  .tbtn.press{transform:scale(.92);
+    background:radial-gradient(circle at 35% 30%,rgba(160,220,255,.55),rgba(30,90,150,.78))}
+  #jumpBtn{width:82px;height:82px;font-size:13px}
+  #actBtn{border-color:rgba(255,210,120,.7);
+    background:radial-gradient(circle at 35% 30%,rgba(255,210,120,.32),rgba(90,60,10,.55))}
+  #actBtn.press{background:radial-gradient(circle at 35% 30%,rgba(255,225,150,.6),rgba(140,90,20,.8))}
+
+  #lookHint{position:absolute;right:8px;top:44%;font-size:10px;letter-spacing:1.5px;
+    color:rgba(180,220,255,.5);writing-mode:vertical-rl;pointer-events:none}
+
+  body.mobile #mobile-ui{display:block}
+  body.mobile #hud{display:none}
+  body.mobile #crosshair{opacity:.5}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="crosshair"></div>
+<div id="prompt"></div>
+<div id="stats">-- fps</div>
+<div id="hud">
+  <div><b>WASD</b> move &nbsp; <b>Shift</b> run</div>
+  <div><b>Space</b> jump &nbsp; <b>Mouse</b> look</div>
+  <div><b>E</b> board / step out (falls if high)</div>
+  <div><b>Esc</b> release mouse</div>
+</div>
+
+<!-- ═══ MOBILE TOUCH UI ═══ -->
+<div id="mobile-ui">
+  <div id="joy-base"><div id="joy-knob"></div></div>
+  <div class="btn-zone" id="jump-wrap">
+    <div class="tbtn" id="jumpBtn">JUMP</div>
+  </div>
+  <div class="btn-zone" id="act-wrap">
+    <div class="tbtn" id="actBtn">ENTER</div>
+  </div>
+  <div id="lookHint">DRAG TO LOOK</div>
+</div>
+
+<div id="overlay">
+  <div class="card">
+    <h1>FERRIS WHEEL PARK</h1>
+    <p>
+      A mathematically generated observation wheel — 30 m radius, 24 gondolas,
+      a full truss lattice and a living park around it.<br><br>
+      <span id="ctrlDesktop">
+        <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk ·
+        <kbd>Shift</kbd> sprint · <kbd>Space</kbd> jump ·
+        <kbd>Mouse</kbd> look · <kbd>E</kbd> board / step out
+      </span>
+      <span id="ctrlMobile" style="display:none">
+        <b>Left stick</b> move · <b>Drag right side</b> look<br>
+        <b>JUMP</b> to hop · <b>ENTER</b> to board / step out
+      </span>
+    </p>
+    <button id="startBtn">ENTER THE PARK</button>
+    <div class="note" id="modeNote">Keyboard &amp; mouse</div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* ════════════════════════════════════════════════════════════════════════
+   0.  DEVICE DETECTION + QUALITY TIER
+   ════════════════════════════════════════════════════════════════════════ */
+const isTouchDevice =
+  ('ontouchstart' in window) ||
+  (navigator.maxTouchPoints > 0) ||
+  /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle|Opera Mini/i.test(navigator.userAgent);
+
+const IS_MOBILE = isTouchDevice && Math.min(innerWidth, innerHeight) < 900;
+if (IS_MOBILE) document.body.classList.add('mobile');
+
+const cores = navigator.hardwareConcurrency || 4;
+const LOW   = IS_MOBILE || cores <= 4;
+
+const Q = {
+  dpr          : Math.min(window.devicePixelRatio || 1, LOW ? 1.5 : 2),
+  torusTubular : LOW ? 6 : 10,
+  torusRadial  : LOW ? 72 : 140,
+  beamSeg      : LOW ? 5 : 7,
+  trees        : LOW ? 90 : 230,
+  antialias    : !LOW
+};
+
+/* ════════════════════════════════════════════════════════════════════════
+   1.  RENDERER / SCENE / CAMERA
+   ════════════════════════════════════════════════════════════════════════ */
+const renderer = new THREE.WebGLRenderer({
+  antialias: Q.antialias, powerPreference: 'high-performance', stencil: false
+});
+renderer.setPixelRatio(Q.dpr);
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = false;
+document.getElementById('app').appendChild(renderer.domElement);
+
+const HORIZON = new THREE.Color(0xcbe4fb);
+const scene  = new THREE.Scene();
+scene.fog    = new THREE.Fog(HORIZON, 130, 470);
+const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.1, 1400);
+
+scene.add(new THREE.HemisphereLight(0xd6ecff, 0x4a6b3a, 1.05));
+const sun = new THREE.DirectionalLight(0xfff3dc, 1.15);
+sun.position.set(90, 130, 70);
+scene.add(sun);
+const bounce = new THREE.DirectionalLight(0x8fb8ff, 0.28);
+bounce.position.set(-70, 40, -90);
+scene.add(bounce);
+
+/* ════════════════════════════════════════════════════════════════════════
+   2.  MATH HELPERS
+   ════════════════════════════════════════════════════════════════════════ */
+const TAU = Math.PI * 2;
+
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const rnd = mulberry32(20240617);
+
+const _up = new THREE.Vector3(0, 1, 0);
+const _a  = new THREE.Vector3();
+const _b  = new THREE.Vector3();
+const _dir = new THREE.Vector3();
+const _mid = new THREE.Vector3();
+const _quat = new THREE.Quaternion();
+const _scale = new THREE.Vector3();
+const _mat4 = new THREE.Matrix4();
+
+function beamMatrix(ax, ay, az, bx, by, bz, radius, out = new THREE.Matrix4()){
+  _a.set(ax, ay, az); _b.set(bx, by, bz);
+  _dir.subVectors(_b, _a);
+  const len = _dir.length();
+  _mid.addVectors(_a, _b).multiplyScalar(0.5);
+  _quat.setFromUnitVectors(_up, _dir.normalize());
+  _scale.set(radius, len, radius);
+  return out.compose(_mid, _quat, _scale);
+}
+
+const smooth = t => t * t * (3 - 2 * t);
+const clamp  = (v, a, b) => v < a ? a : v > b ? b : v;
+
+/* ════════════════════════════════════════════════════════════════════════
+   3.  PROCEDURAL TEXTURES
+   ════════════════════════════════════════════════════════════════════════ */
+function canvasTex(w, h, draw){
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+const maxAniso = renderer.capabilities.getMaxAnisotropy ? renderer.capabilities.getMaxAnisotropy() : 1;
+
+const grassTex = canvasTex(256, 256, (g) => {
+  g.fillStyle = '#4c7d40'; g.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 9000; i++){
+    const x = Math.random() * 256, y = Math.random() * 256, v = Math.random();
+    g.fillStyle = v < 0.40 ? 'rgba(56,102,46,0.55)'
+               : v < 0.75 ? 'rgba(84,138,64,0.50)'
+                          : 'rgba(116,166,84,0.35)';
+    g.fillRect(x, y, 1.6, 1.6);
+  }
+});
+grassTex.repeat.set(110, 110);
+grassTex.anisotropy = Math.min(4, maxAniso);
+
+const paveTex = canvasTex(128, 128, (g) => {
+  g.fillStyle = '#b8b2a4'; g.fillRect(0, 0, 128, 128);
+  for (let i = 0; i < 2600; i++){
+    const r = 140 + Math.random() * 60 | 0;
+    g.fillStyle = `rgba(${r},${r - 4},${r - 14},0.35)`;
+    g.fillRect(Math.random() * 128, Math.random() * 128, 2, 2);
+  }
+  g.strokeStyle = 'rgba(118,112,102,0.55)'; g.lineWidth = 2;
+  g.strokeRect(1, 1, 62, 62); g.strokeRect(65, 65, 62, 62);
+  g.strokeRect(65, 1, 62, 62); g.strokeRect(1, 65, 62, 62);
+});
+paveTex.repeat.set(16, 16);
+paveTex.anisotropy = Math.min(4, maxAniso);
+
+const cloudTex = canvasTex(256, 128, (g) => {
+  g.clearRect(0, 0, 256, 128);
+  for (let i = 0; i < 20; i++){
+    const x = 40 + Math.random() * 176;
+    const y = 50 + Math.random() * 40;
+    const r = 16 + Math.random() * 32;
+    const grd = g.createRadialGradient(x, y, 0, x, y, r);
+    grd.addColorStop(0,   'rgba(255,255,255,0.85)');
+    grd.addColorStop(0.5, 'rgba(255,255,255,0.35)');
+    grd.addColorStop(1,   'rgba(255,255,255,0)');
+    g.fillStyle = grd;
+    g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+  }
+});
+
+/* ════════════════════════════════════════════════════════════════════════
+   4.  SKY
+   ════════════════════════════════════════════════════════════════════════ */
+{
+  const skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, fog: false,
+    uniforms: {
+      cTop:    { value: new THREE.Color(0x2f7ec4) },
+      cMid:    { value: new THREE.Color(0x9fd0f5) },
+      cBottom: { value: new THREE.Color(0xe4f1ff) }
+    },
+    vertexShader: `
+      varying vec3 vPos;
+      void main(){
+        vPos = (modelMatrix * vec4(position, 1.0)).xyz;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }`,
+    fragmentShader: `
+      uniform vec3 cTop, cMid, cBottom;
+      varying vec3 vPos;
+      void main(){
+        float h = normalize(vPos).y;
+        vec3 col = h > 0.0
+          ? mix(cMid, cTop, pow(clamp(h, 0.0, 1.0), 0.75))
+          : mix(cMid, cBottom, pow(clamp(-h, 0.0, 1.0), 0.5));
+        gl_FragColor = vec4(col, 1.0);
+      }`
+  });
+  scene.add(new THREE.Mesh(new THREE.SphereGeometry(900, 24, 16), skyMat));
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   5.  MATERIALS
+   ════════════════════════════════════════════════════════════════════════ */
+const MAT = {
+  steel     : new THREE.MeshLambertMaterial({ color: 0xe8eef5 }),
+  steelMid  : new THREE.MeshLambertMaterial({ color: 0xb9c4d1 }),
+  steelDark : new THREE.MeshLambertMaterial({ color: 0x7d8896 }),
+  accent    : new THREE.MeshLambertMaterial({ color: 0xd8483f }),
+  cabinBase : new THREE.MeshLambertMaterial({ color: 0xffffff }),
+  cabinTrim : new THREE.MeshLambertMaterial({ color: 0xf2f4f7 }),
+  glass     : new THREE.MeshLambertMaterial({
+                color: 0xbfe6ff, transparent: true, opacity: 0.26,
+                depthWrite: false, side: THREE.DoubleSide
+              }),
+  trunk     : new THREE.MeshLambertMaterial({ color: 0x6b4f33 }),
+  leaf      : new THREE.MeshLambertMaterial({ color: 0xffffff }),
+  lampPole  : new THREE.MeshLambertMaterial({ color: 0x38424e }),
+  lampGlow  : new THREE.MeshBasicMaterial({ color: 0xfff0c0 }),
+  wood      : new THREE.MeshLambertMaterial({ color: 0x8a6b4a }),
+  hedge     : new THREE.MeshLambertMaterial({ color: 0x3f7038 }),
+  booth     : new THREE.MeshLambertMaterial({ color: 0xe9e2d4 }),
+  boothRoof : new THREE.MeshLambertMaterial({ color: 0xc4453c })
+};
+
+/* ════════════════════════════════════════════════════════════════════════
+   6.  GROUND + PLAZA
+   ════════════════════════════════════════════════════════════════════════ */
+{
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(1000, 1000),
+    new THREE.MeshLambertMaterial({ map: grassTex })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  scene.add(ground);
+
+  const plaza = new THREE.Mesh(
+    new THREE.CircleGeometry(42, 56),
+    new THREE.MeshLambertMaterial({ map: paveTex })
+  );
+  plaza.rotation.x = -Math.PI / 2;
+  plaza.position.y = 0.02;
+  scene.add(plaza);
+
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(18, 19.4, 64),
+    new THREE.MeshLambertMaterial({ color: 0x9aa3ad })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.04;
+  scene.add(ring);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   7.  CLOUDS
+   ════════════════════════════════════════════════════════════════════════ */
+{
+  const cloudMat = new THREE.SpriteMaterial({
+    map: cloudTex, transparent: true, depthWrite: false, fog: false, opacity: 0.85
+  });
+  for (let i = 0; i < 14; i++){
+    const s = new THREE.Sprite(cloudMat);
+    const ang = rnd() * TAU, rad = 140 + rnd() * 240;
+    s.position.set(Math.cos(ang) * rad, 95 + rnd() * 80, Math.sin(ang) * rad);
+    const sc = 90 + rnd() * 110;
+    s.scale.set(sc, sc * 0.5, 1);
+    scene.add(s);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   8.  FERRIS WHEEL
+   ════════════════════════════════════════════════════════════════════════ */
+const W = { R:30, hubY:33.6, depth:7, N:24, period:58, armLen:1.4, hubR:3.2 };
+const D2 = W.depth / 2;
+const Ri = W.R - 2.0;
+
+const wheelGroup = new THREE.Group();
+wheelGroup.position.y = W.hubY;
+scene.add(wheelGroup);
+
+const rimGeo = new THREE.TorusGeometry(W.R, 0.30, Q.torusTubular, Q.torusRadial);
+const rimInnerGeo = new THREE.TorusGeometry(Ri, 0.18, Q.torusTubular, Q.torusRadial);
+
+for (const z of [ D2, -D2 ]){
+  const outer = new THREE.Mesh(rimGeo, MAT.steel);
+  outer.position.z = z;
+  const inner = new THREE.Mesh(rimInnerGeo, MAT.steelMid);
+  inner.position.z = z;
+  wheelGroup.add(outer, inner);
+}
+
+{
+  const M = [];
+  const r0 = W.hubR;
+
+  for (const side of [ 1, -1 ]){
+    const z = side * D2;
+    for (let i = 0; i < W.N; i++){
+      const t0 = i * TAU / W.N;
+      const t1 = (i + 1) * TAU / W.N;
+      M.push(beamMatrix(Math.cos(t0)*r0, Math.sin(t0)*r0, z,
+                        Math.cos(t0)*Ri, Math.sin(t0)*Ri, z, 0.155));
+      M.push(beamMatrix(Math.cos(t0)*Ri, Math.sin(t0)*Ri, z,
+                        Math.cos(t1)*W.R, Math.sin(t1)*W.R, z, 0.095));
+    }
+  }
+
+  for (let i = 0; i < W.N; i++){
+    const t0 = i * TAU / W.N;
+    const t1 = (i + 1) * TAU / W.N;
+    M.push(beamMatrix(Math.cos(t0)*W.R, Math.sin(t0)*W.R,  D2,
+                      Math.cos(t1)*W.R, Math.sin(t1)*W.R, -D2, 0.085));
+    M.push(beamMatrix(Math.cos(t0)*Ri,  Math.sin(t0)*Ri,   D2,
+                      Math.cos(t1)*Ri,  Math.sin(t1)*Ri,  -D2, 0.065));
+  }
+
+  const beamGeo = new THREE.CylinderGeometry(1, 1, 1, Q.beamSeg, 1, true);
+  const beams = new THREE.InstancedMesh(beamGeo, MAT.steel, M.length);
+  for (let i = 0; i < M.length; i++) beams.setMatrixAt(i, M[i]);
+  beams.instanceMatrix.needsUpdate = true;
+  beams.frustumCulled = false;
+  wheelGroup.add(beams);
+}
+
+{
+  const hubGeo = new THREE.CylinderGeometry(W.hubR, W.hubR, W.depth + 2.6, 18);
+  hubGeo.rotateX(Math.PI / 2);
+  wheelGroup.add(new THREE.Mesh(hubGeo, MAT.steelDark));
+  const capGeo = new THREE.TorusGeometry(W.hubR, 0.32, 6, 24);
+  for (const z of [ D2 + 1.3, -D2 - 1.3 ]){
+    const c = new THREE.Mesh(capGeo, MAT.accent);
+    c.position.z = z;
+    wheelGroup.add(c);
+  }
+}
+
+const supportBeams = [];
+{
+  const legSpread = 13.5;
+  const legTop    = 1.25;
+  const sideZ     = D2 + 1.4;
+
+  for (const sz of [ sideZ, -sideZ ]){
+    for (const sx of [ -1, 1 ]){
+      supportBeams.push(beamMatrix(sx*legSpread, 0, sz, sx*legTop, W.hubY, sz, 0.52));
+      supportBeams.push(beamMatrix(sx*legSpread, 0, sz, sx*(legTop+0.4), W.hubY*0.62, sz, 0.26));
+      const u = 0.62;
+      const ax = sx * legSpread + (sx * legTop - sx * legSpread) * u;
+      const ay = W.hubY * u;
+      supportBeams.push(beamMatrix(-ax, ay, sz, ax, ay, sz, 0.16));
+    }
+  }
+
+  for (const h of [ 0.30, 0.62, 0.88 ]){
+    const y = W.hubY * h;
+    const xL = -legSpread + (legTop + legSpread) * h;
+    const xR =  legSpread + (-legTop - legSpread) * h;
+    supportBeams.push(beamMatrix(xL, y,  sideZ, xL, y, -sideZ, 0.12));
+    supportBeams.push(beamMatrix(xR, y,  sideZ, xR, y, -sideZ, 0.12));
+  }
+
+  const plateGeo = new THREE.BoxGeometry(2.4, 0.5, 2.4);
+  for (const sz of [ sideZ, -sideZ ]){
+    for (const sx of [ -1, 1 ]){
+      const p = new THREE.Mesh(plateGeo, MAT.steelDark);
+      p.position.set(sx * legSpread, 0.25, sz);
+      scene.add(p);
+    }
+  }
+
+  const bearingGeo = new THREE.BoxGeometry(4.6, 4.6, W.depth + 4.2);
+  const bearing = new THREE.Mesh(bearingGeo, MAT.steelMid);
+  bearing.position.y = W.hubY;
+  scene.add(bearing);
+}
+
+{
+  const beamGeo = new THREE.CylinderGeometry(1, 1, 1, Q.beamSeg, 1, true);
+  const mesh = new THREE.InstancedMesh(beamGeo, MAT.steel, supportBeams.length);
+  for (let i = 0; i < supportBeams.length; i++) mesh.setMatrixAt(i, supportBeams[i]);
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.frustumCulled = false;
+  scene.add(mesh);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   9.  GONDOLAS
+   ════════════════════════════════════════════════════════════════════════ */
+const CABIN_PALETTE = [
+  0xe74c3c, 0xf1c40f, 0x3498db, 0x2ecc71,
+  0xe67e22, 0x9b59b6, 0x1abc9c, 0xe84393
+];
+
+const cabinParts = [];
+
+function addCabinPart(geo, mat, opts = {}){
+  const mesh = new THREE.InstancedMesh(geo, mat, W.N);
+  mesh.frustumCulled = false;
+  if (opts.order !== undefined) mesh.renderOrder = opts.order;
+  scene.add(mesh);
+  cabinParts.push(mesh);
+  return mesh;
+}
+
+{
+  const g = new THREE.CylinderGeometry(0.085, 0.085, W.armLen, 6);
+  g.translate(0, -W.armLen / 2, 0);
+  addCabinPart(g, MAT.steelDark);
+}
+{
+  const g = new THREE.CylinderGeometry(0.13, 0.13, W.depth + 0.9, 6);
+  g.rotateX(Math.PI / 2);
+  addCabinPart(g, MAT.steelMid);
+}
+const skirt = addCabinPart((() => {
+  const g = new THREE.CylinderGeometry(1.30, 1.10, 0.60, 10, 1, false);
+  g.translate(0, -3.10, 0); return g;
+})(), MAT.cabinBase);
+addCabinPart((() => {
+  const g = new THREE.CylinderGeometry(1.28, 1.28, 1.05, 10, 1, true);
+  g.translate(0, -2.275, 0); return g;
+})(), MAT.glass, { order: 2 });
+const topRing = addCabinPart((() => {
+  const g = new THREE.CylinderGeometry(1.30, 1.28, 0.35, 10, 1, false);
+  g.translate(0, -1.575, 0); return g;
+})(), MAT.cabinBase);
+const roofMesh = addCabinPart((() => {
+  const g = new THREE.CylinderGeometry(0.55, 1.48, 0.42, 10, 1, false);
+  g.translate(0, -1.19, 0); return g;
+})(), MAT.cabinBase);
+addCabinPart((() => {
+  const g = new THREE.CylinderGeometry(1.16, 1.16, 0.10, 10);
+  g.translate(0, -3.35, 0); return g;
+})(), MAT.cabinTrim);
+
+{
+  const c = new THREE.Color();
+  for (let i = 0; i < W.N; i++){
+    c.setHex(CABIN_PALETTE[i % CABIN_PALETTE.length]);
+    skirt.setColorAt(i, c);
+    topRing.setColorAt(i, c);
+    roofMesh.setColorAt(i, c);
+  }
+  [skirt, topRing, roofMesh].forEach(m => { m.instanceColor.needsUpdate = true; });
+}
+
+let wheelAngle = 0;
+const ANG_SPEED = TAU / W.period;
+
+function cabinPivot(i, out){
+  const t = wheelAngle + i * TAU / W.N;
+  return out.set(Math.cos(t) * W.R, W.hubY + Math.sin(t) * W.R, 0);
+}
+
+function updateCabins(){
+  for (let i = 0; i < W.N; i++){
+    const t = wheelAngle + i * TAU / W.N;
+    const px = Math.cos(t) * W.R;
+    const py = W.hubY + Math.sin(t) * W.R;
+    _mat4.makeTranslation(px, py, 0);
+    for (let p = 0; p < cabinParts.length; p++){
+      cabinParts[p].setMatrixAt(i, _mat4);
+    }
+  }
+  for (let p = 0; p < cabinParts.length; p++){
+    cabinParts[p].instanceMatrix.needsUpdate = true;
+  }
+}
+updateCabins();
+
+/* ════════════════════════════════════════════════════════════════════════
+   10.  ENVIRONMENT
+   ════════════════════════════════════════════════════════════════════════ */
+const colliders = [];
+const PLAYER_R = 0.42;
+
+{
+  const trunkGeo = new THREE.CylinderGeometry(0.18, 0.34, 3.4, 6);
+  trunkGeo.translate(0, 1.7, 0);
+  const leafGeo = new THREE.IcosahedronGeometry(1, 1);
+  leafGeo.scale(2.35, 2.9, 2.35);
+  leafGeo.translate(0, 4.35, 0);
+
+  const trunks = new THREE.InstancedMesh(trunkGeo, MAT.trunk, Q.trees);
+  const leaves = new THREE.InstancedMesh(leafGeo, MAT.leaf, Q.trees);
+  trunks.frustumCulled = false;
+  leaves.frustumCulled = false;
+
+  const dummy = new THREE.Object3D();
+  const col = new THREE.Color();
+
+  for (let i = 0; i < Q.trees; i++){
+    const ang = rnd() * TAU;
+    const rad = 52 + Math.pow(rnd(), 0.72) * 158;
+    const s   = 0.78 + rnd() * 0.75;
+    const x = Math.cos(ang) * rad;
+    const z = Math.sin(ang) * rad;
+
+    dummy.position.set(x, 0, z);
+    dummy.rotation.set(0, rnd() * TAU, 0);
+    dummy.scale.set(s, s * (0.85 + rnd() * 0.5), s);
+    dummy.updateMatrix();
+
+    trunks.setMatrixAt(i, dummy.matrix);
+    leaves.setMatrixAt(i, dummy.matrix);
+
+    col.setHSL(0.24 + rnd()*0.10, 0.42 + rnd()*0.18, 0.28 + rnd()*0.16);
+    leaves.setColorAt(i, col);
+    colliders.push({ x, z, r: 0.95 * s });
+  }
+  trunks.instanceMatrix.needsUpdate = true;
+  leaves.instanceMatrix.needsUpdate = true;
+  leaves.instanceColor.needsUpdate = true;
+  scene.add(trunks, leaves);
+}
+
+{
+  const poleGeo = new THREE.CylinderGeometry(0.11, 0.16, 5.2, 6);
+  poleGeo.translate(0, 2.6, 0);
+  const glowGeo = new THREE.SphereGeometry(0.36, 8, 6);
+  glowGeo.translate(0, 5.35, 0);
+
+  const COUNT = 14;
+  const poles = new THREE.InstancedMesh(poleGeo, MAT.lampPole, COUNT);
+  const glows = new THREE.InstancedMesh(glowGeo, MAT.lampGlow, COUNT);
+  poles.frustumCulled = false;
+  glows.frustumCulled = false;
+
+  const dummy = new THREE.Object3D();
+  for (let i = 0; i < COUNT; i++){
+    const ang = i * TAU / COUNT + 0.22;
+    const rad = 44.5;
+    const x = Math.cos(ang) * rad;
+    const z = Math.sin(ang) * rad;
+    dummy.position.set(x, 0, z);
+    dummy.rotation.set(0, 0, 0);
+    dummy.scale.setScalar(1);
+    dummy.updateMatrix();
+    poles.setMatrixAt(i, dummy.matrix);
+    glows.setMatrixAt(i, dummy.matrix);
+    colliders.push({ x, z, r: 0.42 });
+  }
+  poles.instanceMatrix.needsUpdate = true;
+  glows.instanceMatrix.needsUpdate = true;
+  scene.add(poles, glows);
+}
+
+{
+  const seatGeo = new THREE.BoxGeometry(2.4, 0.14, 0.72);
+  seatGeo.translate(0, 0.52, 0);
+  const backGeo = new THREE.BoxGeometry(2.4, 0.62, 0.13);
+  backGeo.translate(0, 0.88, -0.31);
+  const baseGeo = new THREE.BoxGeometry(2.1, 0.48, 0.58);
+  baseGeo.translate(0, 0.24, 0);
+
+  const COUNT = 10;
+  const mk = (g) => {
+    const m = new THREE.InstancedMesh(g, MAT.wood, COUNT);
+    m.frustumCulled = false;
+    scene.add(m);
+    return m;
+  };
+  const seat = mk(seatGeo), back = mk(backGeo), base = mk(baseGeo);
+
+  const dummy = new THREE.Object3D();
+  for (let i = 0; i < COUNT; i++){
+    const ang = i * TAU / COUNT + 0.5;
+    const rad = 34;
+    const x = Math.cos(ang) * rad;
+    const z = Math.sin(ang) * rad;
+    dummy.position.set(x, 0, z);
+    dummy.rotation.set(0, -ang + Math.PI / 2, 0);
+    dummy.scale.setScalar(1);
+    dummy.updateMatrix();
+    seat.setMatrixAt(i, dummy.matrix);
+    back.setMatrixAt(i, dummy.matrix);
+    base.setMatrixAt(i, dummy.matrix);
+    colliders.push({ x, z, r: 1.1 });
+  }
+  seat.instanceMatrix.needsUpdate = true;
+  back.instanceMatrix.needsUpdate = true;
+  base.instanceMatrix.needsUpdate = true;
+}
+
+{
+  const POSTS = 108;
+  const postGeo = new THREE.BoxGeometry(0.10, 1.15, 0.10);
+  postGeo.translate(0, 0.575, 0);
+  const posts = new THREE.InstancedMesh(postGeo, MAT.steelDark, POSTS);
+  posts.frustumCulled = false;
+
+  const dummy = new THREE.Object3D();
+  const R = 50;
+  for (let i = 0; i < POSTS; i++){
+    const a = i * TAU / POSTS;
+    dummy.position.set(Math.cos(a) * R, 0, Math.sin(a) * R);
+    dummy.rotation.set(0, -a, 0);
+    dummy.scale.setScalar(1);
+    dummy.updateMatrix();
+    posts.setMatrixAt(i, dummy.matrix);
+    colliders.push({ x: Math.cos(a) * R, z: Math.sin(a) * R, r: 0.35 });
+  }
+  posts.instanceMatrix.needsUpdate = true;
+  scene.add(posts);
+
+  const railGeo = new THREE.TorusGeometry(R, 0.045, 4, 140);
+  for (const y of [ 0.55, 1.02 ]){
+    const rail = new THREE.Mesh(railGeo, MAT.steelDark);
+    rail.rotation.x = -Math.PI / 2;
+    rail.position.y = y;
+    scene.add(rail);
+  }
+}
+
+{
+  const g = new THREE.Group();
+  g.position.set(13, 0, 26);
+  g.rotation.y = -0.7;
+
+  const body = new THREE.Mesh(new THREE.BoxGeometry(5.4, 3.1, 4.2), MAT.booth);
+  body.position.y = 1.55;
+  g.add(body);
+
+  const roof = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 4.6, 1.1, 4), MAT.boothRoof);
+  roof.position.y = 3.65;
+  roof.rotation.y = Math.PI / 4;
+  g.add(roof);
+
+  const win = new THREE.Mesh(
+    new THREE.BoxGeometry(2.6, 1.4, 0.12),
+    new THREE.MeshLambertMaterial({ color: 0x9fd6f5 })
+  );
+  win.position.set(0, 2.0, 2.14);
+  g.add(win);
+
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.8, 0.14), MAT.accent);
+  sign.position.set(0, 3.0, 2.16);
+  g.add(sign);
+
+  scene.add(g);
+  colliders.push({ x: 13, z: 26, r: 3.4 });
+}
+
+{
+  const COUNT = 40;
+  const hGeo = new THREE.BoxGeometry(3.0, 1.1, 1.3);
+  hGeo.translate(0, 0.55, 0);
+  const hedges = new THREE.InstancedMesh(hGeo, MAT.hedge, COUNT);
+  hedges.frustumCulled = false;
+
+  const dummy = new THREE.Object3D();
+  for (let i = 0; i < COUNT; i++){
+    const a = i * TAU / COUNT;
+    const R = 47.5;
+    const x = Math.cos(a) * R, z = Math.sin(a) * R;
+    if (Math.abs(a - Math.PI*0.5) < 0.35 || Math.abs(a - Math.PI*1.5) < 0.35){
+      dummy.position.set(x, -5, z);
+    } else {
+      dummy.position.set(x, 0, z);
+    }
+    dummy.rotation.set(0, -a, 0);
+    dummy.scale.setScalar(1);
+    dummy.updateMatrix();
+    hedges.setMatrixAt(i, dummy.matrix);
+  }
+  hedges.instanceMatrix.needsUpdate = true;
+  scene.add(hedges);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   11.  PLAYER STATE
+   ════════════════════════════════════════════════════════════════════════ */
+const player = {
+  pos      : new THREE.Vector3(0, 0, 30),
+  vel      : new THREE.Vector3(),
+  yaw      : 0,
+  pitch    : 0,
+  onGround : true,
+  eye      : 1.68,
+  bob      : 0
+};
+
+let riding     = false;
+let rideIdx    = -1;
+let rideBlend  = 0;
+const boardPos = new THREE.Vector3();
+
+/* ── KEYBOARD STATE ──────────────────────────────────────────────────── */
+const keys = Object.create(null);
+let kbdJumpEdge   = false;
+let kbdActionEdge = false;
+
+addEventListener('keydown', (e) => {
+  if (!keys[e.code]) {                       // first press only (no auto-repeat)
+    if (e.code === 'Space') kbdJumpEdge   = true;
+    if (e.code === 'KeyE')  kbdActionEdge = true;
+  }
+  keys[e.code] = true;
+  if ([ 'Space','KeyW','KeyA','KeyS','KeyD','KeyE',
+        'ArrowUp','ArrowDown','ArrowLeft','ArrowRight' ].includes(e.code)){
+    e.preventDefault();
+  }
+});
+addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+/* ── TOUCH STATE (separate from keyboard so they never clobber) ──────── */
+const touch = {
+  mx: 0, mz: 0, run: false,
+  jumpHeld: false,   jumpEdge: false,
+  actionHeld: false, actionEdge: false
+};
+
+/* ── MOUSE LOOK ──────────────────────────────────────────────────────── */
+const canvas  = renderer.domElement;
+const overlay = document.getElementById('overlay');
+let locked = false;
+
+document.addEventListener('pointerlockchange', () => {
+  locked = document.pointerLockElement === canvas;
+  if (!locked && !IS_MOBILE) overlay.classList.remove('hide');
+});
+
+addEventListener('mousemove', (e) => {
+  if (!locked) return;
+  player.yaw   -= e.movementX * 0.0022;
+  player.pitch -= e.movementY * 0.0022;
+  player.pitch  = clamp(player.pitch, -1.45, 1.45);
+});
+
+/* ════════════════════════════════════════════════════════════════════════
+   12.  MOBILE TOUCH CONTROLS
+   ════════════════════════════════════════════════════════════════════════ */
+const joyBase = document.getElementById('joy-base');
+const joyKnob = document.getElementById('joy-knob');
+const jumpBtn = document.getElementById('jumpBtn');
+const actBtn  = document.getElementById('actBtn');
+
+let joyTouchId = null;
+let joyCx = 0, joyCy = 0;
+const JOY_RADIUS = 52;
+
+/* ---- Joystick ---- */
+function joyStart(t){
+  joyTouchId = t.identifier;
+  const r = joyBase.getBoundingClientRect();
+  joyCx = r.left + r.width / 2;
+  joyCy = r.top  + r.height / 2;
+  joyMove(t);
+}
+function joyMove(t){
+  let dx = t.clientX - joyCx;
+  let dy = t.clientY - joyCy;
+  const d = Math.hypot(dx, dy);
+  if (d > JOY_RADIUS){ dx = dx / d * JOY_RADIUS; dy = dy / d * JOY_RADIUS; }
+  joyKnob.style.transform = `translate(${dx}px,${dy}px)`;
+
+  let mx = dx / JOY_RADIUS;
+  let mz = -dy / JOY_RADIUS;
+  // radial deadzone so tiny accidental touches don't move
+  const mag = Math.hypot(mx, mz);
+  if (mag < 0.14){ mx = 0; mz = 0; }
+
+  touch.mx = mx;
+  touch.mz = mz;
+  touch.run = mag > 0.82;
+}
+function joyEnd(){
+  joyTouchId = null;
+  joyKnob.style.transform = 'translate(0,0)';
+  touch.mx = 0; touch.mz = 0; touch.run = false;
+}
+
+joyBase.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (joyTouchId === null) joyStart(e.changedTouches[0]);
+}, { passive: false });
+
+joyBase.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  for (const t of e.changedTouches){
+    if (t.identifier === joyTouchId){ joyMove(t); break; }
+  }
+}, { passive: false });
+
+const joyRelease = (e) => {
+  e.stopPropagation();
+  for (const t of e.changedTouches){
+    if (t.identifier === joyTouchId){ joyEnd(); break; }
+  }
+};
+joyBase.addEventListener('touchend',    joyRelease, { passive: true });
+joyBase.addEventListener('touchcancel', joyRelease, { passive: true });
+
+/* ---- Look (drag on the right side of the screen) ---- */
+let lookTouchId = null;
+let lookLastX = 0, lookLastY = 0;
+
+function isOverUI(t){
+  const el = document.elementFromPoint(t.clientX, t.clientY);
+  if (!el) return false;
+  return !!(el.closest('.tbtn') || el.closest('#joy-base') || el.closest('#joy-knob'));
+}
+
+canvas.addEventListener('touchstart', (e) => {
+  for (const t of e.changedTouches){
+    if (t.clientX > innerWidth * 0.42 && lookTouchId === null && !isOverUI(t)){
+      lookTouchId = t.identifier;
+      lookLastX = t.clientX;
+      lookLastY = t.clientY;
+    }
+  }
+}, { passive: true });
+
+canvas.addEventListener('touchmove', (e) => {
+  if (lookTouchId === null) return;
+  for (const t of e.changedTouches){
+    if (t.identifier === lookTouchId){
+      const dx = t.clientX - lookLastX;
+      const dy = t.clientY - lookLastY;
+      lookLastX = t.clientX;
+      lookLastY = t.clientY;
+      player.yaw   -= dx * 0.0042;
+      player.pitch -= dy * 0.0042;
+      player.pitch  = clamp(player.pitch, -1.45, 1.45);
+      break;
+    }
+  }
+}, { passive: true });
+
+const lookEnd = (e) => {
+  for (const t of e.changedTouches){
+    if (t.identifier === lookTouchId){ lookTouchId = null; break; }
+  }
+};
+canvas.addEventListener('touchend',    lookEnd, { passive: true });
+canvas.addEventListener('touchcancel', lookEnd, { passive: true });
+
+/* ---- Round action buttons ---- */
+function bindButton(el, onDown, onUp){
+  const down = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    el.classList.add('press');
+    onDown();
+  };
+  const up = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    el.classList.remove('press');
+    if (onUp) onUp();
+  };
+  el.addEventListener('touchstart',  down, { passive: false });
+  el.addEventListener('touchend',    up,   { passive: false });
+  el.addEventListener('touchcancel', up,   { passive: false });
+  el.addEventListener('mousedown',   down);
+  el.addEventListener('mouseup',     up);
+  el.addEventListener('mouseleave',  up);
+}
+
+bindButton(jumpBtn,
+  () => { touch.jumpHeld = true; touch.jumpEdge = true; },
+  () => { touch.jumpHeld = false; }
+);
+bindButton(actBtn,
+  () => { touch.actionHeld = true; touch.actionEdge = true; },
+  () => { touch.actionHeld = false; }
+);
+
+/* ════════════════════════════════════════════════════════════════════════
+   13.  START OVERLAY
+   ════════════════════════════════════════════════════════════════════════ */
+document.getElementById('ctrlDesktop').style.display = IS_MOBILE ? 'none' : 'inline';
+document.getElementById('ctrlMobile').style.display  = IS_MOBILE ? 'inline' : 'none';
+document.getElementById('modeNote').textContent =
+  IS_MOBILE ? 'Touch controls enabled' : 'Keyboard & mouse';
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  overlay.classList.add('hide');
+  if (!IS_MOBILE && canvas.requestPointerLock) canvas.requestPointerLock();
+});
+canvas.addEventListener('click', () => {
+  if (!IS_MOBILE && !locked && canvas.requestPointerLock) canvas.requestPointerLock();
+});
+
+/* ════════════════════════════════════════════════════════════════════════
+   14.  COLLISION + BOARDING
+   ════════════════════════════════════════════════════════════════════════ */
+function resolveCollisions(p){
+  for (let i = 0; i < colliders.length; i++){
+    const c = colliders[i];
+    const dx = p.x - c.x;
+    const dz = p.z - c.z;
+    const minD = c.r + PLAYER_R;
+    const d2 = dx * dx + dz * dz;
+    if (d2 < minD * minD && d2 > 1e-6){
+      const d = Math.sqrt(d2);
+      const push = (minD - d) / d;
+      p.x += dx * push;
+      p.z += dz * push;
+    }
+  }
+  const r = Math.hypot(p.x, p.z);
+  if (r > 195){ p.x *= 195 / r; p.z *= 195 / r; }
+}
+
+const _pivot = new THREE.Vector3();
+function findBoardableCabin(){
+  let best = -1, bestD = 4.6;
+  const lowLimit = W.hubY - W.R + 3.0;
+  for (let i = 0; i < W.N; i++){
+    cabinPivot(i, _pivot);
+    if (_pivot.y > lowLimit) continue;
+    const dx = _pivot.x - player.pos.x;
+    const dz = _pivot.z - player.pos.z;
+    const d = Math.sqrt(dx * dx + dz * dz);
+    if (d < bestD){ bestD = d; best = i; }
+  }
+  return best;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   15.  UPDATE LOOP
+   ════════════════════════════════════════════════════════════════════════ */
+const promptEl = document.getElementById('prompt');
+const statsEl  = document.getElementById('stats');
+
+const _fwd   = new THREE.Vector3();
+const _right = new THREE.Vector3();
+const _wish  = new THREE.Vector3();
+const _camTarget = new THREE.Vector3();
+const _euler = new THREE.Euler(0, 0, 0, 'YXZ');
+
+const GRAVITY  = 24;
+const JUMP_VEL = 8.2;
+const WALK     = 5.4;
+const RUN      = 10.2;
+const ACCEL    = 14;
+
+let fpsFrames = 0, fpsTimer = 0, downgrades = 0;
+
+function update(dt){
+  /* ── 1. Combine keyboard + touch input (NO clobbering) ─────────────── */
+  let kx = 0, kz = 0;
+  if (keys['KeyW'] || keys['ArrowUp'])    kz += 1;
+  if (keys['KeyS'] || keys['ArrowDown'])  kz -= 1;
+  if (keys['KeyD'] || keys['ArrowRight']) kx += 1;
+  if (keys['KeyA'] || keys['ArrowLeft'])  kx -= 1;
+
+  // Combine: keyboard adds to touch (so either input source works)
+  const mx  = clamp(kx + touch.mx, -1, 1);
+  const mz  = clamp(kz + touch.mz, -1, 1);
+  const run = !!(keys['ShiftLeft'] || keys['ShiftRight']) || touch.run;
+
+  // One-shot edges (consumed this frame)
+  const jumpEdge   = kbdJumpEdge   || touch.jumpEdge;
+  const actionEdge = kbdActionEdge || touch.actionEdge;
+  kbdJumpEdge = kbdActionEdge = false;
+  touch.jumpEdge = touch.actionEdge = false;
+
+  /* ── 2. Wheel ──────────────────────────────────────────────────────── */
+  wheelAngle += ANG_SPEED * dt;
+  if (wheelAngle > TAU) wheelAngle -= TAU;
+  wheelGroup.rotation.z = wheelAngle;
+  updateCabins();
+
+  /* ── 3. Player movement ───────────────────────────────────────────── */
+  _fwd.set(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+  _right.set(Math.cos(player.yaw), 0, -Math.sin(player.yaw));
+
+  const speed = run ? RUN : WALK;
+  _wish.set(0, 0, 0)
+    .addScaledVector(_fwd, mz)
+    .addScaledVector(_right, mx);
+  if (_wish.lengthSq() > 1) _wish.normalize();
+  _wish.multiplyScalar(speed);
+
+  if (!riding){
+    // Horizontal — air control allowed, gravity always applies
+    player.vel.x += (_wish.x - player.vel.x) * Math.min(1, ACCEL * dt);
+    player.vel.z += (_wish.z - player.vel.z) * Math.min(1, ACCEL * dt);
+
+    if (jumpEdge && player.onGround){
+      player.vel.y = JUMP_VEL;
+      player.onGround = false;
+    }
+
+    // Gravity — the important part for falling
+    player.vel.y -= GRAVITY * dt;
+
+    player.pos.x += player.vel.x * dt;
+    player.pos.z += player.vel.z * dt;
+    player.pos.y += player.vel.y * dt;
+
+    resolveCollisions(player.pos);
+
+    // Ground plane at y = 0
+    if (player.pos.y <= 0){
+      player.pos.y = 0;
+      player.vel.y = 0;
+      player.onGround = true;
+    } else {
+      player.onGround = false;
+    }
+
+    const hSpeed = Math.hypot(player.vel.x, player.vel.z);
+    player.bob += dt * hSpeed * 1.65;
+    const bobAmt = player.onGround ? Math.min(hSpeed / RUN, 1) * 0.055 : 0;
+
+    _camTarget.set(
+      player.pos.x + Math.cos(player.bob) * bobAmt * 0.35,
+      player.pos.y + player.eye + Math.abs(Math.sin(player.bob)) * bobAmt,
+      player.pos.z
+    );
+
+    if (rideBlend > 0){
+      rideBlend = Math.max(0, rideBlend - dt * 3.0);
+      const k = smooth(rideBlend);
+      _pivot.copy(_camTarget).lerp(boardPos, k);
+      camera.position.copy(_pivot);
+    } else {
+      camera.position.copy(_camTarget);
+    }
+  }
+
+  /* ── 4. Boarding / riding / stepping out ──────────────────────────── */
+  const boardable = riding ? -1 : findBoardableCabin();
+  let showPrompt = '';
+
+  if (riding){
+    cabinPivot(rideIdx, _pivot);
+    const eyeY = _pivot.y - 1.90;
+    const sway = Math.sin(wheelAngle * 2.3) * 0.035;
+    boardPos.set(_pivot.x + sway, eyeY, _pivot.z);
+    camera.position.copy(boardPos);
+    showPrompt = IS_MOBILE ? 'Tap ENTER to step out'
+                           : 'Press  E  to step out';
+  } else if (boardable >= 0){
+    showPrompt = IS_MOBILE ? 'Tap ENTER to board the gondola'
+                           : 'Press  E  to board the gondola';
+  }
+
+  if (actionEdge){
+    if (riding){
+      /* ── STEP OUT AT ANY HEIGHT → FREE FALL ───────────────────────── */
+      cabinPivot(rideIdx, _pivot);
+
+      // Place the player just below and outside the gondola
+      const feetY = Math.max(0, _pivot.y - 3.55);
+      player.pos.set(_pivot.x, feetY, _pivot.z + 1.9);
+      player.vel.set(0, 0, 0);          // start with zero velocity
+      player.onGround = feetY <= 0.01;  // false unless we're at ground level
+
+      resolveCollisions(player.pos);
+
+      riding    = false;
+      rideBlend = 0;
+      rideIdx   = -1;
+      // Gravity will now pull them down naturally in the next frames.
+    } else if (boardable >= 0){
+      boardPos.copy(camera.position);
+      riding    = true;
+      rideIdx   = boardable;
+      rideBlend = 1;
+      player.vel.set(0, 0, 0);
+    }
+  }
+
+  /* ── 5. Camera orientation ─────────────────────────────────────────── */
+  _euler.set(player.pitch, player.yaw, 0);
+  camera.quaternion.setFromEuler(_euler);
+
+  /* ── 6. Prompt ─────────────────────────────────────────────────────── */
+  if (showPrompt){
+    promptEl.textContent = showPrompt;
+    promptEl.classList.add('on');
+  } else {
+    promptEl.classList.remove('on');
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   16.  RENDER + ADAPTIVE QUALITY
+   ════════════════════════════════════════════════════════════════════════ */
+let lastTime = performance.now();
+
+function animate(now){
+  requestAnimationFrame(animate);
+  let dt = (now - lastTime) / 1000;
+  lastTime = now;
+  dt = Math.min(dt, 0.05);
+
+  update(dt);
+
+  fpsFrames++;
+  fpsTimer += dt;
+  if (fpsTimer > 1.0){
+    const fps = fpsFrames / fpsTimer;
+    statsEl.textContent = fps.toFixed(0) + ' fps' + (downgrades ? ' · eco' : '');
+    if (fps < 40 && downgrades < 2){
+      downgrades++;
+      renderer.setPixelRatio(Math.max(0.65, renderer.getPixelRatio() * 0.78));
+      if (downgrades === 2){ scene.fog.near = 90; scene.fog.far = 320; }
+    }
+    fpsTimer = 0; fpsFrames = 0;
+  }
+
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(animate);
+
+/* ── resize ──────────────────────────────────────────────────────────── */
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+addEventListener('contextmenu', e => e.preventDefault());
+
+/* Prevent pull-to-refresh / rubber-band scrolling on mobile */
+document.addEventListener('touchmove', (e) => {
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+</script>
+</body>
+</html>
